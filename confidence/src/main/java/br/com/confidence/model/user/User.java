@@ -1,4 +1,4 @@
-package br.com.confidence.users;
+package br.com.confidence.model.user;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -7,7 +7,7 @@ import java.util.List;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import br.com.confidence.roles.Role;
+import br.com.confidence.model.role.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
