@@ -1,10 +1,10 @@
-package br.com.confidence.roles;
+package br.com.confidence.model.role;
 
 import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
 
-import br.com.confidence.users.User;
+import br.com.confidence.model.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
