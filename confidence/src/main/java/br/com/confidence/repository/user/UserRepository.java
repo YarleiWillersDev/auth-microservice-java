@@ -14,8 +14,8 @@ import br.com.confidence.model.user.User;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
-    Optional<User> findByUsername(String username);
-    List<User> findAllByRole(Role role);
+    Optional<User> findByName(String name);
+    List<User> findAllByRolesContaining(Role role);
     List<User> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
 }

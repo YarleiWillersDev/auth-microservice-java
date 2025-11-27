@@ -36,6 +36,9 @@ public class User implements UserDetails {
     @Column(name = "id")
     private long id;
 
+    @Column(name = "name", length = 255, nullable = false)
+    private String name;
+
     @Column(name = "email", length = 255, nullable = false)
     private String email;
 
@@ -49,11 +52,7 @@ public class User implements UserDetails {
     private LocalDateTime updatedAt;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_role",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private List<Role> roles;
 
     @Override
