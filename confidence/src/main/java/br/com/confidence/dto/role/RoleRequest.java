@@ -11,6 +11,4 @@ public record RoleRequest(
 
     String description
 
-) {
-
-}
+) {}

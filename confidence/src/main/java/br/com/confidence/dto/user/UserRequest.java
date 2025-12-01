@@ -8,7 +8,7 @@ public record UserRequest(
 
     @NotBlank(message = "Name cannot be null/empty.")
     @Size(min = 3, message = "Name must contain at least 3 letters")
-    String nome,
+    String name,
 
     @NotBlank(message = "Email cannot be null/empty.")
     @Email
