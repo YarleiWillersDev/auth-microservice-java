@@ -36,6 +36,9 @@ public class User implements UserDetails {
     @Column(name = "id")
     private long id;
 
+    @Column(name = "name", length = 255, nullable = false)
+    private String name;
+
     @Column(name = "email", length = 255, nullable = false)
     private String email;
 
