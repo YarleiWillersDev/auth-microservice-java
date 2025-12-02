@@ -1,6 +1,6 @@
 package br.com.confidence.repository.role;
 
-import java.util.Optional;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -10,7 +10,7 @@ import br.com.confidence.model.role.Role;
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {
 
-    Optional<Role> findByName(String name);
+    List<Role> findByNameContainingIgnoreCase(String name);
     boolean existsByName(String name);
     long countByName(String name);
 
