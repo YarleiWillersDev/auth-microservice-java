@@ -54,27 +54,29 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public void delete(RoleRequest roleRequest) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+    public void delete(long id) {
+        Role role = roleRepository.findById(id)
+            .orElseThrow(() -> new RoleNotFoundException("Role not found"));
+        roleRepository.delete(role);
     }
 
     @Override
     public RoleResponse searchById(long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'searchById'");
+        Role role = roleRepository.findById(id)
+            .orElseThrow(() -> new RoleNotFoundException("Role not found"));
+        return RoleMapper.toResponse(role);
     }
 
     @Override
     public List<RoleResponse> searchByName(String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'searchByName'");
+        List<Role> roles = roleRepository.findByNameContainingIgnoreCase(name);
+        return RoleMapper.toResponse(roles);
     }
 
     @Override
     public List<RoleResponse> listAll() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'listAll'");
+        List<Role> roles = roleRepository.findAll();
+        return RoleMapper.toResponse(roles);
     }
 
 }
