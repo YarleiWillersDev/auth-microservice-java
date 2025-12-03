@@ -3,10 +3,14 @@ package br.com.confidence.service.role;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -19,7 +23,9 @@ import org.springframework.test.context.ActiveProfiles;
 
 import br.com.confidence.dto.role.RoleRequest;
 import br.com.confidence.dto.role.RoleResponse;
+import br.com.confidence.dto.role.RoleUpdateRequest;
 import br.com.confidence.exception.role.InvalidRoleNameException;
+import br.com.confidence.exception.role.RoleAlreadyExistsException;
 import br.com.confidence.model.role.Role;
 import br.com.confidence.repository.role.RoleRepository;
 import br.com.confidence.updater.role.RoleUpdater;
@@ -51,7 +57,7 @@ public class RoleServiceImplTestIT {
 
         @Test
         void shouldCreateRoleWhenReceivedDataIsCorrect() {
-            
+
             RoleRequest request = new RoleRequest("ADMIN", "Admin role");
             Role savedRole = new Role();
             savedRole.setId(1L);
@@ -75,14 +81,102 @@ public class RoleServiceImplTestIT {
         void shouldThrowExceptionWhenTryingCreateRoleWithNullName() {
 
             RoleRequest request = new RoleRequest(null, "Admin role");
-            
+
             doThrow(new InvalidRoleNameException("Role name cannot be null/empty or contain fewer than 3 letters."))
-                .when(roleValidation).validateRoleRequestInformation(request);
+                    .when(roleValidation).validateRoleRequestInformation(request);
 
             assertThrows(InvalidRoleNameException.class, () -> roleService.create(request));
             verifyNoInteractions(roleRepository);
         }
 
+        @Test
+        void shouldThrowExceptionWhenTryingCreateRoleWithEmptyName() {
+
+            RoleRequest request = new RoleRequest("", "Admin role");
+
+            doThrow(new InvalidRoleNameException("Role name cannot be null/empty or contain fewer than 3 letters."))
+                    .when(roleValidation).validateRoleRequestInformation(request);
+
+            assertThrows(InvalidRoleNameException.class, () -> roleService.create(request));
+            verifyNoInteractions(roleRepository);
+        }
+
+        @Test
+        void shouldThrowExceptionWhenTryingCreateRoleWithInvalidName() {
+
+            RoleRequest request = new RoleRequest("jo", "Admin role");
+
+            doThrow(new InvalidRoleNameException("Role name cannot be null/empty or contain fewer than 3 letters."))
+                    .when(roleValidation).validateRoleRequestInformation(request);
+
+            assertThrows(InvalidRoleNameException.class, () -> roleService.create(request));
+            verifyNoInteractions(roleRepository);
+        }
+
+        @Test
+        void shouldThrowExceptionWhenTryingCreateRoleWithExistingName() {
+
+            RoleRequest request = new RoleRequest("ADMIN", "Admin role");
+
+            when(roleRepository.existsByName("ADMIN")).thenReturn(true);
+
+            assertThrows(RoleAlreadyExistsException.class, () -> roleService.create(request));
+            verify(roleValidation).validateRoleRequestInformation(request);
+            verify(roleRepository, never()).save(any(Role.class));
+
+        }
     }
 
+    @Nested
+    class UpdateTest {
+
+        @Test
+        void shouldUpdateRoleWhenDataIsValid() {
+            long id = 1L;
+
+            RoleUpdateRequest request = new RoleUpdateRequest(
+                    Optional.of("NEW_ADMIN"),
+                    Optional.of("New description"));
+
+            Role existingRole = new Role();
+            existingRole.setId(id);
+            existingRole.setName("ADMIN");
+            existingRole.setDescription("Admin Role");
+
+            when(roleRepository.findById(id)).thenReturn(Optional.of(existingRole));
+            when(roleRepository.save(existingRole)).thenReturn(existingRole);
+
+            doAnswer(invocation -> {
+                Role roleArg = invocation.getArgument(0, Role.class);
+                RoleUpdateRequest reqArg = invocation.getArgument(1, RoleUpdateRequest.class);
+
+                reqArg.name().ifPresent(roleArg::setName);
+                reqArg.description().ifPresent(roleArg::setDescription);
+
+                return null;
+            }).when(roleUpdater).updateRoleInformation(existingRole, request);
+
+            RoleResponse response = roleService.update(request, id);
+
+            verify(roleValidation).validateRoleUpdateRequestInformation(request);
+            verify(roleUpdater).updateRoleInformation(existingRole, request);
+            verify(roleRepository).save(existingRole);
+
+            assertEquals(id, response.id());
+            assertEquals("NEW_ADMIN", response.name());
+            assertEquals("New description", response.description());
+
+        }
+
+        @Test
+        void shouldThrowExceptionWhenRoleNotFoundOnUpdate() {
+
+        }
+
+        @Test
+        void shouldThrowInvalidRoleNameExceptionWhenUpdateWithInvalideName() {
+            
+        }
+
+    }
 }
