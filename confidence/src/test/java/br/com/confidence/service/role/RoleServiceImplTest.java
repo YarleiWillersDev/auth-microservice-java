@@ -26,6 +26,7 @@ import br.com.confidence.dto.role.RoleResponse;
 import br.com.confidence.dto.role.RoleUpdateRequest;
 import br.com.confidence.exception.role.InvalidRoleNameException;
 import br.com.confidence.exception.role.RoleAlreadyExistsException;
+import br.com.confidence.exception.role.RoleNotFoundException;
 import br.com.confidence.model.role.Role;
 import br.com.confidence.repository.role.RoleRepository;
 import br.com.confidence.updater.role.RoleUpdater;
@@ -34,7 +35,7 @@ import br.com.confidence.validation.role.RoleValidation;
 @ActiveProfiles("test")
 @SpringBootTest
 @ExtendWith(MockitoExtension.class)
-public class RoleServiceImplTestIT {
+public class RoleServiceImplTest {
 
     @Mock
     private RoleRepository roleRepository;
@@ -171,12 +172,79 @@ public class RoleServiceImplTestIT {
         @Test
         void shouldThrowExceptionWhenRoleNotFoundOnUpdate() {
 
+            long id = 999L;
+
+            RoleUpdateRequest request = new RoleUpdateRequest(
+                Optional.of("NEW_ADMIN"),
+                Optional.of("New description"));
+
+            when(roleRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(RoleNotFoundException.class, () -> roleService.update(request, id));
+
+            verifyNoInteractions(roleValidation);
+            verifyNoInteractions(roleUpdater);
+            verify(roleRepository, never()).save(any(Role.class));
         }
 
         @Test
         void shouldThrowInvalidRoleNameExceptionWhenUpdateWithInvalideName() {
             
+            long id = 1;
+
+            RoleUpdateRequest request = new RoleUpdateRequest(
+                Optional.of("jo"),
+                Optional.of("New description"));
+            
+            Role existingRole = new Role();
+            existingRole.setId(id);
+            existingRole.setName("ADMIN");
+            existingRole.setDescription("Admin Role");
+
+            when(roleRepository.findById(id)).thenReturn(Optional.of(existingRole));
+
+            doThrow(new InvalidRoleNameException("Role name cannot be null/empty or contain fewer than 3 letters."))
+                    .when(roleValidation).validateRoleUpdateRequestInformation(request);
+                
+            assertThrows(InvalidRoleNameException.class, () -> roleService.update(request, id));
+
+            verifyNoInteractions(roleUpdater);
+            verify(roleRepository, never()).save(any(Role.class));
         }
 
+    }
+
+    @Nested
+    class DeleteTest {
+
+        @Test
+        void shouldDeleteUserUsingValidId() {
+
+            long id = 1L;
+
+            Role existingRole = new Role();
+            existingRole.setId(id);
+
+            when(roleRepository.findById(id)).thenReturn(Optional.of(existingRole));
+
+            roleService.delete(id);
+
+            verify(roleRepository).findById(id);
+            verify(roleRepository).delete(existingRole);
+        }
+
+        @Test
+        void shouldThrowExceptionWhenDeletingNonExistingRole() {
+
+            long id = 999L;
+
+            when(roleRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(RoleNotFoundException.class, () -> roleService.delete(id));
+
+            verify(roleRepository).findById(id);
+            verify(roleRepository, never()).delete(any(Role.class));
+
+        }
     }
 }
