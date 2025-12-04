@@ -2,6 +2,7 @@ package br.com.confidence.service.role;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -10,6 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -175,8 +178,8 @@ public class RoleServiceImplTest {
             long id = 999L;
 
             RoleUpdateRequest request = new RoleUpdateRequest(
-                Optional.of("NEW_ADMIN"),
-                Optional.of("New description"));
+                    Optional.of("NEW_ADMIN"),
+                    Optional.of("New description"));
 
             when(roleRepository.findById(id)).thenReturn(Optional.empty());
 
@@ -189,13 +192,13 @@ public class RoleServiceImplTest {
 
         @Test
         void shouldThrowInvalidRoleNameExceptionWhenUpdateWithInvalideName() {
-            
+
             long id = 1;
 
             RoleUpdateRequest request = new RoleUpdateRequest(
-                Optional.of("jo"),
-                Optional.of("New description"));
-            
+                    Optional.of("jo"),
+                    Optional.of("New description"));
+
             Role existingRole = new Role();
             existingRole.setId(id);
             existingRole.setName("ADMIN");
@@ -205,7 +208,7 @@ public class RoleServiceImplTest {
 
             doThrow(new InvalidRoleNameException("Role name cannot be null/empty or contain fewer than 3 letters."))
                     .when(roleValidation).validateRoleUpdateRequestInformation(request);
-                
+
             assertThrows(InvalidRoleNameException.class, () -> roleService.update(request, id));
 
             verifyNoInteractions(roleUpdater);
@@ -246,5 +249,122 @@ public class RoleServiceImplTest {
             verify(roleRepository, never()).delete(any(Role.class));
 
         }
+    }
+
+    @Nested
+    class searchById {
+
+        @Test
+        void shouldReturnRoleFoundThroughId() {
+
+            long id = 1L;
+
+            Role savedRole = new Role();
+            savedRole.setId(id);
+            savedRole.setName("ADMIN");
+            savedRole.setDescription("Admin role");
+
+            when(roleRepository.findById(id)).thenReturn(Optional.of(savedRole));
+
+            RoleResponse response = roleService.searchById(id);
+
+            verify(roleRepository).findById(id);
+            assertEquals(id, response.id());
+            assertEquals("ADMIN", response.name());
+            assertEquals("Admin role", response.description());
+        }
+
+        @Test
+        void shouldReturnExceptionIdicatingRoleNotFoundWithUnregisteredId() {
+
+            long id = 999L;
+
+            when(roleRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(RoleNotFoundException.class, () -> roleService.searchById(id));
+
+            verify(roleRepository).findById(id);
+        }
+    }
+
+    @Nested
+    class searchByName {
+
+        @Test
+        void shouldReturnRoleListWhenNameMatches() {
+            String name = "adm";
+
+            Role role1 = new Role();
+            role1.setId(1L);
+            role1.setName("ADMIN");
+            role1.setDescription("Admin role");
+
+            Role role2 = new Role();
+            role2.setId(2L);
+            role2.setName("ADVANCED_ADMIN");
+            role2.setDescription("Advanced admin role");
+
+            List<Role> roles = List.of(role1, role2);
+
+            when(roleRepository.findByNameContainingIgnoreCase(name)).thenReturn(roles);
+
+            List<RoleResponse> responses = roleService.searchByName(name);
+
+            verify(roleRepository).findByNameContainingIgnoreCase(name);
+            assertEquals(2, responses.size());
+            assertEquals("ADMIN", responses.get(0).name());
+        }
+
+        @Test
+        void shouldReturnEmptyListWhenNoRoleMatchesName() {
+            String name = "does-not-exist";
+
+            when(roleRepository.findByNameContainingIgnoreCase(name))
+                    .thenReturn(Collections.emptyList());
+
+            List<RoleResponse> responses = roleService.searchByName(name);
+
+            verify(roleRepository).findByNameContainingIgnoreCase(name);
+            assertTrue(responses.isEmpty());
+        }
+    }
+
+    @Nested
+    class ListAll {
+
+        @Test
+        void shouldReturnAllRolesWhenListIsNotEmpty() {
+            Role role1 = new Role();
+            role1.setId(1L);
+            role1.setName("ADMIN");
+            role1.setDescription("Admin role");
+
+            Role role2 = new Role();
+            role2.setId(2L);
+            role2.setName("USER");
+            role2.setDescription("User role");
+
+            List<Role> roles = List.of(role1, role2);
+
+            when(roleRepository.findAll()).thenReturn(roles);
+
+            List<RoleResponse> responses = roleService.listAll();
+
+            verify(roleRepository).findAll();
+            assertEquals(2, responses.size());
+            assertEquals("ADMIN", responses.get(0).name());
+            assertEquals("USER", responses.get(1).name());
+        }
+
+        @Test
+        void shouldReturnEmptyListWhenNoRolesExist() {
+            when(roleRepository.findAll()).thenReturn(Collections.emptyList());
+
+            List<RoleResponse> responses = roleService.listAll();
+
+            verify(roleRepository).findAll();
+            assertTrue(responses.isEmpty());
+        }
+
     }
 }
