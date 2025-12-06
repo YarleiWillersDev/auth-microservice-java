@@ -8,5 +8,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 @EnableWebSecurity
 @Profile({"dev", "prod"})
 public class SecurityConfig {
+
+    
     
 }
