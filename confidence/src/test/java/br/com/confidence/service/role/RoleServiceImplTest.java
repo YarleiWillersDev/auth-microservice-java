@@ -21,8 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import br.com.confidence.dto.role.RoleRequest;
 import br.com.confidence.dto.role.RoleResponse;
@@ -35,8 +33,6 @@ import br.com.confidence.repository.role.RoleRepository;
 import br.com.confidence.updater.role.RoleUpdater;
 import br.com.confidence.validation.role.RoleValidation;
 
-@ActiveProfiles("test")
-@SpringBootTest
 @ExtendWith(MockitoExtension.class)
 public class RoleServiceImplTest {
 

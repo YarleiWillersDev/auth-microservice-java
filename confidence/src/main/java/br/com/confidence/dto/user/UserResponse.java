@@ -15,7 +15,7 @@ public record UserResponse(
 
     LocalDateTime createdAt,
 
-    LocalDateTime updatedATime,
+    LocalDateTime updatedAt,
 
     List<RoleResponse> roles
 
