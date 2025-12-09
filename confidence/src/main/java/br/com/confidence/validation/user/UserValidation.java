@@ -58,7 +58,7 @@ public class UserValidation {
 
     public void validateLowercaseLetterInPasswordUserRequest(String password) {
         if (!password.matches(".*[a-z].*")) {
-            throw new InvalidUserPasswordException("Password must contain at least one digit");
+            throw new InvalidUserPasswordException("Password must contain at least one lowercase letter");
         }
     }
 
