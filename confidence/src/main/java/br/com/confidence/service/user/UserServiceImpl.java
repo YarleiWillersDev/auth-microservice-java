@@ -11,6 +11,7 @@ import br.com.confidence.dto.user.UserRequest;
 import br.com.confidence.dto.user.UserResponse;
 import br.com.confidence.dto.user.UserUpdateRequest;
 import br.com.confidence.exception.role.RoleNotFoundException;
+import br.com.confidence.exception.user.CurrentPasswordIncorrectException;
 import br.com.confidence.exception.user.UserAlreadyExistsException;
 import br.com.confidence.exception.user.UserNotFoundException;
 import br.com.confidence.mapper.user.UserMapper;
@@ -64,48 +65,85 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new UserNotFoundException("User not found"));
         
-        userRequest.name().ifPresent(userValidation::validateNameUserRequest);
-        userUpdater.updateUsername(user, userRequest);
+        String newName = userRequest.name();
+        userValidation.validateNameUserRequest(newName);
+
+        userUpdater.updateUsername(user, newName);
+
+        User savedUser = userRepository.save(user);
+        return UserMapper.toResponse(savedUser);
+    }
+
+    @Override
+    public UserResponse updateEmail(UserEmailUpdateRequest userRequest, long id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        String newEmail = userRequest.email();
+        userValidation.validateEmailUserRequest(newEmail);
+        validateEmailUniquenessForUpdate(user, newEmail);
+
+        userUpdater.updateEmail(user, newEmail);
 
         User savedUser = userRepository.save(user);
 
         return UserMapper.toResponse(savedUser);
     }
 
-    @Override
-    public UserResponse updateEmail(UserEmailUpdateRequest userRequest, long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'updateEmail'");
+    private void validateEmailUniquenessForUpdate(User user, String newEmail) {
+        if (!newEmail.equals(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
+            throw new UserAlreadyExistsException("User already exists with this email");
+        }
     }
 
     @Override
     public UserResponse updatePassword(UserPasswordUpdateRequest userRequest, long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'updatePassword'");
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+        
+        validateCurrentPasswordPassedByUser(user, userRequest.currentPassword());
+        userValidation.validatePasswordUserRequest(userRequest.newPassword());
+
+        String encodePassword = passwordEncoder.encode(userRequest.newPassword());
+        userUpdater.updatePassword(user, encodePassword);
+        
+        User savedUser = userRepository.save(user);
+        return UserMapper.toResponse(savedUser);
+    }
+
+    private void validateCurrentPasswordPassedByUser(User user, String currentPassword) {
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new CurrentPasswordIncorrectException("Current password is incorrect");
+        }
     }
 
     @Override
     public void delete(long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        userRepository.delete(user);
     }
 
     @Override
     public UserResponse searchByEmail(String email) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'searchByEmail'");
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new UserNotFoundException("User not found with this email"));
+
+        return UserMapper.toResponse(user);
     }
 
     @Override
     public List<UserResponse> searchByName(String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'searchByName'");
+        List<User> users = userRepository.findByNameContainingIgnoreCase(name);
+
+        return UserMapper.toResponse(users);
     }
 
     @Override
     public List<UserResponse> listAll() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'listAll'");
+        List<User> users = userRepository.findAll();
+        return UserMapper.toResponse(users);
     }
 
 }
