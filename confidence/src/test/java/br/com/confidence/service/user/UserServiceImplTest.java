@@ -2,6 +2,7 @@ package br.com.confidence.service.user;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -23,11 +24,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import br.com.confidence.dto.user.UserEmailUpdateRequest;
+import br.com.confidence.dto.user.UserPasswordUpdateRequest;
 import br.com.confidence.dto.user.UserRequest;
 import br.com.confidence.dto.user.UserResponse;
 import br.com.confidence.dto.user.UserUpdateRequest;
 import br.com.confidence.exception.role.RoleNotFoundException;
+import br.com.confidence.exception.user.CurrentPasswordIncorrectException;
 import br.com.confidence.exception.user.InvalidUserEmailException;
+import br.com.confidence.exception.user.InvalidUserPasswordException;
 import br.com.confidence.exception.user.InvalidUsernameException;
 import br.com.confidence.exception.user.UserAlreadyExistsException;
 import br.com.confidence.exception.user.UserNotFoundException;
@@ -219,7 +223,7 @@ public class UserServiceImplTest {
             User existingUser = new User();
             existingUser.setId(id);
             existingUser.setName("Antigo Nome");
-            existingUser.setRoles(List.of()); 
+            existingUser.setRoles(List.of());
 
             when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
 
@@ -325,8 +329,9 @@ public class UserServiceImplTest {
 
             when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
 
-            doThrow(new InvalidUserEmailException("Invalid user email address. The email address must contain at least 15 characters."))
-                .when(userValidation).validateEmailUserRequest(invalidEmail);
+            doThrow(new InvalidUserEmailException(
+                    "Invalid user email address. The email address must contain at least 15 characters."))
+                    .when(userValidation).validateEmailUserRequest(invalidEmail);
 
             assertThrows(InvalidUserEmailException.class, () -> userServiceImpl.updateEmail(request, id));
 
@@ -353,4 +358,255 @@ public class UserServiceImplTest {
             verify(userRepository, never()).save(any(User.class));
         }
     }
+
+    @Nested
+    class updatePassword {
+
+        @Test
+        void shouldUpdatePasswordWhenDataIsValid() {
+            long id = 1L;
+            UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("Current@123", "NewStrong@123");
+
+            User user = new User();
+            user.setId(id);
+            user.setName("User");
+            user.setEmail("user@email.com");
+            user.setPassword("encoded-current");
+            user.setRoles(List.of());
+
+            when(userRepository.findById(id)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches("Current@123", "encoded-current")).thenReturn(true);
+            when(passwordEncoder.encode("NewStrong@123")).thenReturn("encoded-new");
+            when(userRepository.save(user)).thenReturn(user);
+
+            UserResponse response = userServiceImpl.updatePassword(request, id);
+
+            verify(userRepository).findById(id);
+            verify(passwordEncoder).matches("Current@123", "encoded-current");
+            verify(userValidation).validatePasswordUserRequest("NewStrong@123");
+            verify(passwordEncoder).encode("NewStrong@123");
+            verify(userUpdater).updatePassword(user, "encoded-new");
+            verify(userRepository).save(user);
+
+            assertEquals(id, response.id());
+        }
+
+        @Test
+        void shouldThrowCurrentPasswordIncorrectExceptionWhenCurrentPasswordDoesNotMatch() {
+            long id = 1L;
+            UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("WrongPassword@123", "NewStrong@123");
+
+            User user = new User();
+            user.setId(id);
+            user.setPassword("encoded-current");
+            user.setRoles(List.of());
+
+            when(userRepository.findById(id)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches("WrongPassword@123", "encoded-current")).thenReturn(false);
+
+            assertThrows(CurrentPasswordIncorrectException.class,
+                    () -> userServiceImpl.updatePassword(request, id));
+
+            verify(userRepository).findById(id);
+            verify(passwordEncoder).matches("WrongPassword@123", "encoded-current");
+            verifyNoInteractions(userUpdater);
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        void shouldThrowInvalidUserPasswordExceptionWhenNewPasswordIsInvalid() {
+            long id = 1L;
+            UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("Current@123", "weak"); // senha fraca
+
+            User user = new User();
+            user.setId(id);
+            user.setPassword("encoded-current");
+            user.setRoles(List.of());
+
+            when(userRepository.findById(id)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches("Current@123", "encoded-current")).thenReturn(true);
+
+            doThrow(new InvalidUserPasswordException("Password must have at least 8 characters"))
+                    .when(userValidation).validatePasswordUserRequest("weak");
+
+            assertThrows(InvalidUserPasswordException.class,
+                    () -> userServiceImpl.updatePassword(request, id));
+
+            verify(userRepository).findById(id);
+            verify(passwordEncoder).matches("Current@123", "encoded-current");
+            verify(userValidation).validatePasswordUserRequest("weak");
+            verifyNoInteractions(userUpdater);
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        void shouldThrowUserNotFoundExceptionWhenIdDoesNotExistOnPasswordUpdate() {
+            long id = 999L;
+            UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("Current@123", "NewStrong@123");
+
+            when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(UserNotFoundException.class,
+                    () -> userServiceImpl.updatePassword(request, id));
+
+            verify(userRepository).findById(id);
+            verifyNoInteractions(passwordEncoder, userValidation, userUpdater);
+            verify(userRepository, never()).save(any(User.class));
+        }
+    }
+
+    @Nested
+    class DeleteUser {
+
+        @Test
+        void shouldDeleteUserWhenIdExists() {
+            long id = 1L;
+
+            User user = new User();
+            user.setId(id);
+            user.setName("User");
+            user.setRoles(List.of());
+
+            when(userRepository.findById(id)).thenReturn(Optional.of(user));
+
+            userServiceImpl.delete(id);
+
+            verify(userRepository).findById(id);
+            verify(userRepository).delete(user);
+        }
+
+        @Test
+        void shouldThrowUserNotFoundExceptionWhenDeletingNonExistingUser() {
+            long id = 999L;
+
+            when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(UserNotFoundException.class,
+                    () -> userServiceImpl.delete(id));
+
+            verify(userRepository).findById(id);
+            verify(userRepository, never()).delete(any(User.class));
+        }
+    }
+
+    @Nested
+    class SerchaById {
+        @Test
+        void shouldReturnUserResponseWhenEmailExists() {
+            String email = "user@email.com";
+
+            User user = new User();
+            user.setId(1L);
+            user.setName("User");
+            user.setEmail(email);
+            user.setRoles(List.of());
+
+            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+            UserResponse response = userServiceImpl.searchByEmail(email);
+
+            verify(userRepository).findByEmail(email);
+            assertEquals(user.getId(), response.id());
+            assertEquals(user.getName(), response.name());
+            assertEquals(user.getEmail(), response.email());
+        }
+
+        @Test
+        void shouldThrowUserNotFoundExceptionWhenEmailDoesNotExist() {
+            String email = "notfound@email.com";
+
+            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+            assertThrows(UserNotFoundException.class,
+                    () -> userServiceImpl.searchByEmail(email));
+
+            verify(userRepository).findByEmail(email);
+        }
+    }
+
+    @Nested
+    class SearchByNameTest {
+
+        @Test
+        void shouldReturnUserListWhenNameMatches() {
+            String name = "yar";
+
+            User user1 = new User();
+            user1.setId(1L);
+            user1.setName("Yarlei");
+            user1.setEmail("yarlei1@email.com");
+            user1.setRoles(List.of());
+
+            User user2 = new User();
+            user2.setId(2L);
+            user2.setName("Yara");
+            user2.setEmail("yara@email.com");
+            user2.setRoles(List.of());
+
+            List<User> users = List.of(user1, user2);
+
+            when(userRepository.findByNameContainingIgnoreCase(name)).thenReturn(users);
+
+            List<UserResponse> responses = userServiceImpl.searchByName(name);
+
+            verify(userRepository).findByNameContainingIgnoreCase(name);
+            assertEquals(2, responses.size());
+            assertEquals("Yarlei", responses.get(0).name());
+            assertEquals("Yara", responses.get(1).name());
+        }
+
+        @Test
+        void shouldReturnEmptyListWhenNoUserMatchesName() {
+            String name = "does-not-exist";
+
+            when(userRepository.findByNameContainingIgnoreCase(name))
+                    .thenReturn(List.of());
+
+            List<UserResponse> responses = userServiceImpl.searchByName(name);
+
+            verify(userRepository).findByNameContainingIgnoreCase(name);
+            assertTrue(responses.isEmpty());
+        }
+    }
+
+    @Nested
+    class ListAllTest {
+
+        @Test
+        void shouldReturnAllUsersWhenListIsNotEmpty() {
+            User user1 = new User();
+            user1.setId(1L);
+            user1.setName("User One");
+            user1.setEmail("one@email.com");
+            user1.setRoles(List.of());
+
+            User user2 = new User();
+            user2.setId(2L);
+            user2.setName("User Two");
+            user2.setEmail("two@email.com");
+            user2.setRoles(List.of());
+
+            List<User> users = List.of(user1, user2);
+
+            when(userRepository.findAll()).thenReturn(users);
+
+            List<UserResponse> responses = userServiceImpl.listAll();
+
+            verify(userRepository).findAll();
+            assertEquals(2, responses.size());
+            assertEquals("User One", responses.get(0).name());
+            assertEquals("User Two", responses.get(1).name());
+        }
+
+        @Test
+        void shouldReturnEmptyListWhenNoUsersExist() {
+            when(userRepository.findAll()).thenReturn(List.of());
+
+            List<UserResponse> responses = userServiceImpl.listAll();
+
+            verify(userRepository).findAll();
+            assertTrue(responses.isEmpty());
+        }
+    }
+
 }
