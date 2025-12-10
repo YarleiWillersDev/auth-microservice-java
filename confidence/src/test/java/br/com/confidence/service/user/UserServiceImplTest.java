@@ -3,6 +3,7 @@ package br.com.confidence.service.user;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -21,10 +22,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import br.com.confidence.dto.user.UserEmailUpdateRequest;
 import br.com.confidence.dto.user.UserRequest;
 import br.com.confidence.dto.user.UserResponse;
 import br.com.confidence.dto.user.UserUpdateRequest;
 import br.com.confidence.exception.role.RoleNotFoundException;
+import br.com.confidence.exception.user.InvalidUserEmailException;
 import br.com.confidence.exception.user.InvalidUsernameException;
 import br.com.confidence.exception.user.UserAlreadyExistsException;
 import br.com.confidence.exception.user.UserNotFoundException;
@@ -246,6 +249,108 @@ public class UserServiceImplTest {
             verifyNoInteractions(userValidation, userUpdater);
             verify(userRepository, never()).save(any(User.class));
         }
+    }
 
+    @Nested
+    class UpdateEmail {
+
+        @Test
+        void shouldUpdateUserEmailWhenDataIsValid() {
+            long id = 1L;
+            UserEmailUpdateRequest request = new UserEmailUpdateRequest("new@email.com");
+
+            User existingUser = new User();
+            existingUser.setId(id);
+            existingUser.setName("User");
+            existingUser.setEmail("old@email.com");
+            existingUser.setRoles(List.of());
+
+            when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
+            when(userRepository.existsByEmail(request.email())).thenReturn(false);
+            when(userRepository.save(existingUser)).thenReturn(existingUser);
+
+            doAnswer(invocation -> {
+                User userArg = invocation.getArgument(0, User.class);
+                String newEmailArg = invocation.getArgument(1, String.class);
+                userArg.setEmail(newEmailArg);
+                return null;
+            }).when(userUpdater).updateEmail(existingUser, "new@email.com");
+
+            UserResponse response = userServiceImpl.updateEmail(request, id);
+
+            verify(userRepository).findById(id);
+            verify(userValidation).validateEmailUserRequest(request.email());
+            verify(userRepository).existsByEmail(request.email());
+            verify(userUpdater).updateEmail(existingUser, request.email());
+            verify(userRepository).save(existingUser);
+
+            assertEquals(request.email(), response.email());
+        }
+
+        @Test
+        void shouldThrowUserAlreadyExistsExceptionWhenUpdatingWithExistingEmail() {
+            long id = 1L;
+            String newEmail = "existing@email.com";
+            UserEmailUpdateRequest request = new UserEmailUpdateRequest(newEmail);
+
+            User existingUser = new User();
+            existingUser.setId(id);
+            existingUser.setName("User");
+            existingUser.setEmail("old@rmail.com");
+            existingUser.setRoles(List.of());
+
+            when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
+            when(userRepository.existsByEmail(newEmail)).thenReturn(true);
+
+            assertThrows(UserAlreadyExistsException.class, () -> userServiceImpl.updateEmail(request, id));
+
+            verify(userRepository).findById(id);
+            verify(userValidation).validateEmailUserRequest(newEmail);
+            verify(userRepository).existsByEmail(newEmail);
+            verifyNoInteractions(userUpdater);
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        void shouldThrowInvalidUserEmailExceptionWhenEmailIsInvalidOnUpdate() {
+            long id = 1L;
+            String invalidEmail = "inv";
+            UserEmailUpdateRequest request = new UserEmailUpdateRequest(invalidEmail);
+
+            User existingUser = new User();
+            existingUser.setId(id);
+            existingUser.setName("User");
+            existingUser.setEmail("old@email.com");
+            existingUser.setRoles(List.of());
+
+            when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
+
+            doThrow(new InvalidUserEmailException("Invalid user email address. The email address must contain at least 15 characters."))
+                .when(userValidation).validateEmailUserRequest(invalidEmail);
+
+            assertThrows(InvalidUserEmailException.class, () -> userServiceImpl.updateEmail(request, id));
+
+            verify(userRepository).findById(id);
+            verify(userValidation).validateEmailUserRequest(invalidEmail);
+            verify(userRepository, never()).existsByEmail(anyString());
+            verifyNoInteractions(userUpdater);
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        void shouldThrowUserNotFoundExceptionWhenIdDoesNotExistOnUpdate() {
+            long id = 999L;
+            UserEmailUpdateRequest request = new UserEmailUpdateRequest("new@email.com");
+
+            when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(UserNotFoundException.class,
+                    () -> userServiceImpl.updateEmail(request, id));
+
+            verify(userRepository).findById(id);
+            verifyNoInteractions(userValidation, userUpdater);
+            verify(userRepository, never()).existsByEmail(anyString());
+            verify(userRepository, never()).save(any(User.class));
+        }
     }
 }
