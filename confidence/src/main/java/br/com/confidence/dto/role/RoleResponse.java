@@ -8,6 +8,4 @@ public record RoleResponse(
 
     String description
 
-) {
-
-}
+) {}
