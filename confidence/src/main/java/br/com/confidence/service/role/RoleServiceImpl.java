@@ -3,6 +3,7 @@ package br.com.confidence.service.role;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import br.com.confidence.dto.role.RoleRequest;
 import br.com.confidence.dto.role.RoleResponse;
@@ -14,7 +15,6 @@ import br.com.confidence.model.role.Role;
 import br.com.confidence.repository.role.RoleRepository;
 import br.com.confidence.updater.role.RoleUpdater;
 import br.com.confidence.validation.role.RoleValidation;
-import jakarta.transaction.Transactional;
 
 @Service
 public class RoleServiceImpl implements RoleService {
@@ -29,8 +29,8 @@ public class RoleServiceImpl implements RoleService {
         this.roleUpdater = roleUpdater;
     }
 
-    @Transactional
     @Override
+    @Transactional
     public RoleResponse create(RoleRequest roleRequest) {
         roleValidation.validateRoleRequestInformation(roleRequest);
 
@@ -43,6 +43,7 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Transactional
     public RoleResponse update(RoleUpdateRequest roleUpdateRequest, long id) {
         Role role = roleRepository.findById(id)
             .orElseThrow(() -> new RoleNotFoundException("Role not found"));
@@ -54,6 +55,7 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Transactional
     public void delete(long id) {
         Role role = roleRepository.findById(id)
             .orElseThrow(() -> new RoleNotFoundException("Role not found"));
@@ -61,6 +63,7 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public RoleResponse searchById(long id) {
         Role role = roleRepository.findById(id)
             .orElseThrow(() -> new RoleNotFoundException("Role not found"));
@@ -68,15 +71,16 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<RoleResponse> searchByName(String name) {
         List<Role> roles = roleRepository.findByNameContainingIgnoreCase(name);
         return RoleMapper.toResponse(roles);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<RoleResponse> listAll() {
         List<Role> roles = roleRepository.findAll();
         return RoleMapper.toResponse(roles);
     }
-
 }
