@@ -19,6 +19,4 @@ public record RegisterRequest(
     @Size(min = 12, message = "Password must contain at least 12 characters.")
     String password
 
-) {
-
-}
+) {}

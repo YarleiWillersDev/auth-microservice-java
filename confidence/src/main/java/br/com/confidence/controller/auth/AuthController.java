@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.confidence.dto.authentication.AuthenticationRequest;
 import br.com.confidence.dto.authentication.AuthenticationResponse;
+import br.com.confidence.dto.authentication.ForgotPasswordRequestDTO;
 import br.com.confidence.dto.authentication.RegisterRequest;
 import br.com.confidence.dto.user.UserRequest;
 import br.com.confidence.dto.user.UserResponse;
 import br.com.confidence.security.TokenService;
 import br.com.confidence.service.auth.AuthService;
+import br.com.confidence.service.auth.PasswordRecoveryService;
 import br.com.confidence.service.user.UserService;
 import jakarta.validation.Valid;
 
@@ -28,12 +30,14 @@ public class AuthController {
     private final AuthService authService;
     private final TokenService tokenService;
     private final AuthenticationManager authenticationManager;
+    private final PasswordRecoveryService passwordRecoveryService;
 
-    public AuthController(UserService userService, AuthService authService, TokenService tokenService, AuthenticationManager authenticationManager) {
+    public AuthController(UserService userService, AuthService authService, TokenService tokenService, AuthenticationManager authenticationManager, PasswordRecoveryService passwordRecoveryService) {
         this.userService = userService;
         this.authService = authService;
         this.tokenService = tokenService;
         this.authenticationManager = authenticationManager;
+        this.passwordRecoveryService = passwordRecoveryService;
     }
 
     @PostMapping("/register")
@@ -47,5 +51,11 @@ public class AuthController {
     public ResponseEntity<AuthenticationResponse> login (@Valid @RequestBody AuthenticationRequest request) {
         AuthenticationResponse response = authService.login(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequestDTO requestDTO) {
+        passwordRecoveryService.requestPasswordReset(requestDTO.email());
+        return ResponseEntity.noContent().build();
     }
 }
