@@ -2,6 +2,7 @@ package br.com.confidence.mapper.user;
 
 import java.util.List;
 
+import br.com.confidence.dto.authentication.RegisterRequest;
 import br.com.confidence.dto.user.UserRequest;
 import br.com.confidence.dto.user.UserResponse;
 import br.com.confidence.mapper.role.RoleMapper;
@@ -17,6 +18,13 @@ public final class UserMapper {
         user.setEmail(userRequest.email());
         user.setPassword(userRequest.password());
         return user;
+    }
+
+    public static UserRequest toUserRequest(RegisterRequest registerRequest) {
+        return new UserRequest(
+            registerRequest.name(), 
+            registerRequest.email(),
+            registerRequest.password());
     }
 
     public static UserResponse toResponse(User user) {
