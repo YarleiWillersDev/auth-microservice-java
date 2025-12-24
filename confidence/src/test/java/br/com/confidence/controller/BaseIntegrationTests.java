@@ -1,5 +1,7 @@
 package br.com.confidence.controller;
 
+import static org.mockito.Mockito.mock;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,6 +9,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,6 +27,7 @@ import br.com.confidence.repository.user.UserRepository;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(BaseIntegrationTests.TestMailConfig.class)
 public abstract class BaseIntegrationTests {
 
     @Autowired
@@ -50,7 +57,7 @@ public abstract class BaseIntegrationTests {
         role.setName("ADMIN");
         role.setDescription("ADMIN permissions");
         return roleRepository.save(role);
-    }
+    } 
 
     protected Role createUserRoleForTest() {
         Role role = new Role();
@@ -68,7 +75,7 @@ public abstract class BaseIntegrationTests {
         List<Role> roles = new ArrayList<>();
         roles.add(createAdminRoleForTest());
         user.setRoles(roles);
-        
+
         return userRepository.save(user);
     }
 
@@ -81,7 +88,16 @@ public abstract class BaseIntegrationTests {
         List<Role> roles = new ArrayList<>();
         roles.add(createUserRoleForTest());
         user.setRoles(roles);
-        
+
         return userRepository.save(user);
+    }
+
+    @TestConfiguration
+    static class TestMailConfig {
+
+        @Bean
+        public JavaMailSender javaMailSender() {
+            return mock(JavaMailSender.class);
+        }
     }
 }
