@@ -46,19 +46,30 @@ public class RoleServiceImpl implements RoleService {
     @Transactional
     public RoleResponse update(RoleUpdateRequest roleUpdateRequest, long id) {
         Role role = roleRepository.findById(id)
-            .orElseThrow(() -> new RoleNotFoundException("Role not found"));
+                .orElseThrow(() -> new RoleNotFoundException("Role not found"));
 
+        validateRoleNameUniquenessOnUpdate(id, roleUpdateRequest.name());
         roleValidation.validateRoleUpdateRequestInformation(roleUpdateRequest);
         roleUpdater.updateRoleInformation(role, roleUpdateRequest);
 
         return RoleMapper.toResponse(roleRepository.save(role));
     }
 
+    private void validateRoleNameUniquenessOnUpdate(long roleId, String newName) {
+        List<Role> roles = roleRepository.findByName(newName);
+
+        for (Role existingRole : roles) {
+            if (existingRole.getId() != roleId) {
+                throw new RoleAlreadyExistsException("Role name already exists");
+            }
+        }
+    }
+
     @Override
     @Transactional
     public void delete(long id) {
         Role role = roleRepository.findById(id)
-            .orElseThrow(() -> new RoleNotFoundException("Role not found"));
+                .orElseThrow(() -> new RoleNotFoundException("Role not found"));
         roleRepository.delete(role);
     }
 
@@ -66,7 +77,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional(readOnly = true)
     public RoleResponse searchById(long id) {
         Role role = roleRepository.findById(id)
-            .orElseThrow(() -> new RoleNotFoundException("Role not found"));
+                .orElseThrow(() -> new RoleNotFoundException("Role not found"));
         return RoleMapper.toResponse(role);
     }
 

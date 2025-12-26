@@ -14,7 +14,9 @@ public class RoleValidation {
     }
 
     public void validateRoleUpdateRequestInformation(RoleUpdateRequest roleUpdateRequest) {
-        roleUpdateRequest.name().ifPresent(this::validateRoleName);
+        if (roleUpdateRequest.name() != null) {
+            validateRoleName(roleUpdateRequest.name());
+        }
     }
 
     public void validateRoleName(String name) {
