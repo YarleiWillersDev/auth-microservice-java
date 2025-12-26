@@ -47,9 +47,9 @@ public abstract class BaseIntegrationTests {
 
     @AfterEach
     void tearDown() {
+        passwordResetTokenRepository.deleteAll();
         userRepository.deleteAll();
         roleRepository.deleteAll();
-        passwordResetTokenRepository.deleteAll();
     }
 
     protected Role createAdminRoleForTest() {

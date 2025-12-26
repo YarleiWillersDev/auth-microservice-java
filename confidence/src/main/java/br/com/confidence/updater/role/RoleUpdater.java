@@ -14,11 +14,15 @@ public class RoleUpdater {
     }
     
     public void updateRoleName(Role role, RoleUpdateRequest updateRequest) {
-        updateRequest.name().ifPresent(role::setName);
+        if (updateRequest.name() != null) {
+            role.setName(updateRequest.name());
+        }
     }
 
     public void updateRoleDescription(Role role, RoleUpdateRequest updateRequest) {
-        updateRequest.description().ifPresent(role::setDescription);
+        if (updateRequest.description() != null) {
+            role.setDescription(updateRequest.description());
+        }
     }
 
 }
