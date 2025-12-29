@@ -201,7 +201,8 @@ public class RoleControllerIT extends BaseIntegrationTests {
         void shouldReturnStatus404WhenTryingUpdateRoleWithNonExistentID() throws Exception {
             long roleID = 999L;
 
-            RoleUpdateRequest roleUpdateRequest = new RoleUpdateRequest("LITTLE BOSS", "Role with LITTLE BOSS permission");
+            RoleUpdateRequest roleUpdateRequest = new RoleUpdateRequest("LITTLE BOSS",
+                    "Role with LITTLE BOSS permission");
 
             String requestBodyJson = objectMapper.writeValueAsString(roleUpdateRequest);
 
@@ -221,7 +222,8 @@ public class RoleControllerIT extends BaseIntegrationTests {
 
             long roleID = role.getId();
 
-            RoleUpdateRequest roleUpdateRequest = new RoleUpdateRequest("LITTLE BOSS", "Role with LITTLE BOSS permission");
+            RoleUpdateRequest roleUpdateRequest = new RoleUpdateRequest("LITTLE BOSS",
+                    "Role with LITTLE BOSS permission");
 
             String requestBodyJson = objectMapper.writeValueAsString(roleUpdateRequest);
 
@@ -229,7 +231,7 @@ public class RoleControllerIT extends BaseIntegrationTests {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBodyJson))
                     .andDo(print())
-                    .andExpect(status().isForbidden());     
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -238,7 +240,8 @@ public class RoleControllerIT extends BaseIntegrationTests {
 
             long roleID = role.getId();
 
-            RoleUpdateRequest roleUpdateRequest = new RoleUpdateRequest("LITTLE BOSS", "Role with LITTLE BOSS permission");
+            RoleUpdateRequest roleUpdateRequest = new RoleUpdateRequest("LITTLE BOSS",
+                    "Role with LITTLE BOSS permission");
 
             String requestBodyJson = objectMapper.writeValueAsString(roleUpdateRequest);
 
@@ -246,9 +249,8 @@ public class RoleControllerIT extends BaseIntegrationTests {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBodyJson))
                     .andDo(print())
-                    .andExpect(status().isForbidden());   
+                    .andExpect(status().isForbidden());
         }
-        
 
         @Test
         @WithMockUser(roles = "ADMIN")
@@ -294,7 +296,7 @@ public class RoleControllerIT extends BaseIntegrationTests {
             mockMvc.perform(delete("/roles/{id}", roleID)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isNoContent());   
+                    .andExpect(status().isNoContent());
         }
 
         @Test
@@ -307,7 +309,7 @@ public class RoleControllerIT extends BaseIntegrationTests {
             mockMvc.perform(delete("/roles/{id}", roleID)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isForbidden());   
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -339,7 +341,7 @@ public class RoleControllerIT extends BaseIntegrationTests {
 
     @Nested
     class searchByIdRoleTest {
-        
+
         @Test
         @WithMockUser(roles = "ADMIN")
         void shouldReturnStatus200WhenSearchingForRoleWithExistingID() throws Exception {
@@ -378,7 +380,7 @@ public class RoleControllerIT extends BaseIntegrationTests {
             mockMvc.perform(get("/roles/{id}", roleID)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isForbidden());   
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -395,4 +397,68 @@ public class RoleControllerIT extends BaseIntegrationTests {
                     .andExpect(jsonPath("$.message").exists());
         }
     }
+
+    @Nested
+    class searchByNameRoleTest {
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus200WhenSearchingForRoleWithExistingName() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            mockMvc.perform(get("/roles/search")
+                    .param("name", role.getName())
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus200AlongWithEmptyListWhenSearchingRoleWithoutRegisteredName() throws Exception {
+            String roleName = "BOSS";
+
+            mockMvc.perform(get("/roles/search")
+                    .param("name", roleName)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus200WhenAttemptingSearchRoleByNameWhenPassingEmptyName() throws Exception {
+            String roleName = "";
+
+            mockMvc.perform(get("/roles/search")
+                    .param("name", roleName)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk());   
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenSearchingForRoleByNameWithUnauthorizedUser() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            mockMvc.perform(get("/roles/search")
+                    .param("name", role.getName())
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void shouldReturnStatus403WhenSearchingForProductByNameWithUnauthenticatedUser() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            mockMvc.perform(get("/roles/search")
+                    .param("name", role.getName())
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+    }
 }
+
