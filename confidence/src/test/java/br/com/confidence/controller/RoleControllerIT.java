@@ -1,5 +1,7 @@
 package br.com.confidence.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -276,6 +278,121 @@ public class RoleControllerIT extends BaseIntegrationTests {
                     .andExpect(jsonPath("$.message").exists())
                     .andExpect(jsonPath("$.status").value(409));
 
+        }
+    }
+
+    @Nested
+    class deleteRoleTest {
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus204WhenDeletingRoleSuccessfully() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            long roleID = role.getId();
+
+            mockMvc.perform(delete("/roles/{id}", roleID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isNoContent());   
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenAttemptingDeleteRoleWithUnauthorizedUser() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            long roleID = role.getId();
+
+            mockMvc.perform(delete("/roles/{id}", roleID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());   
+        }
+
+        @Test
+        void shouldReturnStatus403WhenAttemptingDeleteRoleWithUnauthenticatedUser() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            long roleID = role.getId();
+
+            mockMvc.perform(delete("/roles/{id}", roleID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus404WhenTryingDeleteRoleWithNonExistentID() throws Exception {
+
+            long roleID = 999L;
+
+            mockMvc.perform(delete("/roles/{id}", roleID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").exists())
+                    .andExpect(jsonPath("$.status").value(404));
+        }
+    }
+
+    @Nested
+    class searchByIdRoleTest {
+        
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus200WhenSearchingForRoleWithExistingID() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            long roleID = role.getId();
+
+            mockMvc.perform(get("/roles/{id}", roleID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").exists())
+                    .andExpect(jsonPath("$.name").value(role.getName()))
+                    .andExpect(jsonPath("$.description").value(role.getDescription()));
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenAttemptingGetRoleWithUnauthorizedUser() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            long roleID = role.getId();
+
+            mockMvc.perform(get("/roles/{id}", roleID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void shouldReturnStatus403WhenAttemptingGetRoleWithUnauthenticatedUser() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            long roleID = role.getId();
+
+            mockMvc.perform(get("/roles/{id}", roleID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());   
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus404WhenSearchingForRoleWithNonExistentID() throws Exception {
+
+            long roleID = 999L;
+
+            mockMvc.perform(get("/roles/{id}", roleID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.message").exists());
         }
     }
 }
