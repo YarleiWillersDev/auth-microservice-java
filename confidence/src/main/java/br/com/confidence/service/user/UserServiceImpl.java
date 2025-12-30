@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
             throw new UserAlreadyExistsException("User already exists with this email");
         }
 
-        List<Role> roles = roleRepository.findByName("ROLE_USER");
+        List<Role> roles = roleRepository.findByName("USER");
         Role defaultRole = roles.stream()
                 .findFirst()
                 .orElseThrow(() -> new RoleNotFoundException("Default role not found"));
