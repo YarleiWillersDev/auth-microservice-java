@@ -460,5 +460,41 @@ public class RoleControllerIT extends BaseIntegrationTests {
                     .andExpect(status().isForbidden());
         }
     }
+
+    @Nested
+    class listAllRoleTest {
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus200WhenListingAllRoles() throws Exception {
+            createAdminRoleForTest();
+
+            mockMvc.perform(get("/roles")
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenAttemptingListRolesWithUnauthorizedUser() throws Exception {
+            createAdminRoleForTest();
+
+            mockMvc.perform(get("/roles")
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void shouldReturnStatus403WhenAttemptingListRolesWithUnauthenticatedUser() throws Exception {
+            createAdminRoleForTest();
+
+            mockMvc.perform(get("/roles")
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+    }
 }
 
