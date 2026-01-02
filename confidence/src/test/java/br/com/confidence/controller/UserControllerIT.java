@@ -1,6 +1,7 @@
 package br.com.confidence.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -14,6 +15,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 import br.com.confidence.dto.user.UserRequest;
+import br.com.confidence.dto.user.UserUpdateRequest;
+import br.com.confidence.model.user.User;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -270,4 +273,132 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
     }
 
+    @Nested
+    class updateUserTest {
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus200WhenUpdatingUserSuccessfully() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserUpdateRequest userUpdateRequest = new UserUpdateRequest("Test");
+
+            mockMvc.perform(put("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").exists())
+                    .andExpect(jsonPath("$.name").value("Test"));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus200WhenUpdatingUserWithSameName() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+            String originalName = user.getName();
+
+            UserUpdateRequest userUpdateRequest = new UserUpdateRequest(originalName);
+
+            mockMvc.perform(put("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value(originalName));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus400WhenUpdatingUserWithEmptyName() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserUpdateRequest userUpdateRequest = new UserUpdateRequest("");
+
+            mockMvc.perform(put("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus400WhenUpdatingUserWithNullName() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserUpdateRequest userUpdateRequest = new UserUpdateRequest(null);
+
+            mockMvc.perform(put("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus400WhenTryingToUpdateUserWithNameExceedingCharacterLimit() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+            String longName = "A".repeat(256);
+
+            UserUpdateRequest userUpdateRequest = new UserUpdateRequest(longName);
+
+            mockMvc.perform(put("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenTryingToUpdateUserWithUnauthorizedUser() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserUpdateRequest userUpdateRequest = new UserUpdateRequest("Alonso");
+
+            mockMvc.perform(put("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void shouldReturnStatus403WhenTryingToUpdateUserWithUserNotAuthenticated() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserUpdateRequest userUpdateRequest = new UserUpdateRequest("Alonso");
+
+            mockMvc.perform(put("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus404WhenTryingToUpdateUserWithIdNotRegisteredInTheDatabase() throws Exception {
+            long userID = 999L;
+
+            UserUpdateRequest userUpdateRequest = new UserUpdateRequest("Alonso");
+
+            mockMvc.perform(put("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    
 }
