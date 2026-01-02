@@ -1,5 +1,6 @@
 package br.com.confidence.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -14,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
+import br.com.confidence.dto.user.UserEmailUpdateRequest;
 import br.com.confidence.dto.user.UserRequest;
 import br.com.confidence.dto.user.UserUpdateRequest;
 import br.com.confidence.model.user.User;
@@ -400,5 +402,163 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
     }
 
-    
+    @Nested
+    class updateUserEmailTest {
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus200WhenSuccessfullyAttemptingToUpdateUserEmail() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("TestTest@email.com.br");
+
+            mockMvc.perform(patch("/users/email/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                    .andDo(print())
+
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").exists())
+                    .andExpect(jsonPath("$.name").value(user.getName()))
+                    .andExpect(jsonPath("$.email").value("TestTest@email.com.br"));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus200WhenTryingToUpdateUserEmailWithoutChangingEmailValue() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("admin@gmail.com");
+
+            mockMvc.perform(patch("/users/email/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").exists())
+                    .andExpect(jsonPath("$.name").value(user.getName()))
+                    .andExpect(jsonPath("$.email").value("admin@gmail.com"));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus400WhenTryingToUpdateEmailWithNullData() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest(null);
+
+            mockMvc.perform(patch("/users/email/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus400WhenTryingToUpdateEmailWithEmptyString() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("");
+
+            mockMvc.perform(patch("/users/email/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus400WhenTryingToUpdateEmailWithMinimumCharacters() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("user@email.com");
+
+            mockMvc.perform(patch("/users/email/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus400WhenTryingToUpdateEmailWithInvalidFormat() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("emailInvalido.com.br");
+
+            mockMvc.perform(patch("/users/email/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenTryingToUpdateEmailWithUnauthorizedUser() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("admin@gmail.com");
+
+            mockMvc.perform(patch("/users/email/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void shouldReturnStatus403WhenTryingToUpdateEmailWithUnauthenticatedUser() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("admin@gmail.com");
+
+            mockMvc.perform(patch("/users/email/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus404WhenTryingToUpdateUserWithIdNotRegisteredInTheDatabase() throws Exception {
+            long userID = 999L;
+
+            UserUpdateRequest userUpdateRequest = new UserUpdateRequest("Alonso");
+
+            mockMvc.perform(put("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldReturnStatus404WhenTryingToUpdateEmailWithNonExistentUserId() throws Exception {
+        createAdminUserForTest();
+        User user = createNormalUserForTest();
+        long userID = user.getId();
+
+        UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("admin@gmail.com");
+
+        mockMvc.perform(patch("/users/email/{id}", userID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                .andDo(print())
+                .andExpect(status().isConflict());
+    }
 }
