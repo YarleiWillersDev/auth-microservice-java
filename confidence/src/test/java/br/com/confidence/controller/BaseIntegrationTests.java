@@ -69,7 +69,7 @@ public abstract class BaseIntegrationTests {
     protected User createAdminUserForTest() {
         User user = new User();
         user.setName("Yarlei");
-        user.setEmail("adminl@gmail.com");
+        user.setEmail("admin@gmail.com");
         user.setPassword("@SenhaSegura123");
 
         List<Role> roles = new ArrayList<>();

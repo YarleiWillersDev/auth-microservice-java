@@ -123,9 +123,8 @@ public class GlobalExceptionHandler {
         String defaultMessage = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .findFirst()
-                .map(error -> error.getField() + " " + error.getDefaultMessage())
-                .orElse("Validation failed");
+                .map(error -> error.getDefaultMessage().replaceFirst(error.getField() + " ", ""))
+                .collect(Collectors.joining("; "));
 
         ErrorResponse body = new ErrorResponse(
                 Instant.now(),
