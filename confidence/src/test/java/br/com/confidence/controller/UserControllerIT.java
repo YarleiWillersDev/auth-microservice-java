@@ -687,6 +687,49 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
                     .andDo(print())
                     .andExpect(status().isBadRequest());
-        }   
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComUsuarioSemAutorizacao() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SenhaSegura3000");
+
+            mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComUsuarioSemAutenticacao() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SenhaSegura3000");
+
+            mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus404AoAtualizarSenhaDeUsuarioComIdInexistente() throws Exception {
+            long falseID = 999L;
+
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SenhaSegura3000");
+
+            mockMvc.perform(patch("/users/password/{id}", falseID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }
     }
 }
