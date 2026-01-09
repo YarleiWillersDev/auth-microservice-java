@@ -1,5 +1,6 @@
 package br.com.confidence.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -568,7 +569,7 @@ public class UserControllerIT extends BaseIntegrationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void deveRetornarStatus200AoAtualizarSenhaDeUsuarioComDadosCorretos() throws Exception {
+        void shouldReturnStatus200WhenUpdatingUserPasswordWithCorrectData() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -585,7 +586,7 @@ public class UserControllerIT extends BaseIntegrationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaNull() throws Exception {
+        void shouldReturnStatus400WhenUpdatingUserPasswordWithNullPassword() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -601,7 +602,7 @@ public class UserControllerIT extends BaseIntegrationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaVazia() throws Exception {
+        void shouldReturnStatus400WhenUpdatingUserPasswordWithEmptyPassword() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -616,7 +617,7 @@ public class UserControllerIT extends BaseIntegrationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaSemLetraMaiuscula() throws Exception {
+        void shouldReturnStatus400WhenUpdatingUserPasswordWithPasswordWithoutUppercaseLetter() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -631,7 +632,7 @@ public class UserControllerIT extends BaseIntegrationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaSemLetraMinuscula() throws Exception {
+        void shouldReturnStatus400WhenUpdatingUserPasswordWithPasswordWithoutLowerLetter() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -646,7 +647,7 @@ public class UserControllerIT extends BaseIntegrationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaSemNumeros() throws Exception {
+        void shouldReturnStatus400WhenUpdatingUserPasswordWithPasswordWithoutNumbers() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -661,7 +662,7 @@ public class UserControllerIT extends BaseIntegrationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaSemSimbolo() throws Exception {
+        void shouldReturnStatus400WhenUpdatingUserPasswordWithPasswordWithoutSymbol() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -676,7 +677,7 @@ public class UserControllerIT extends BaseIntegrationTests {
         
         @Test
         @WithMockUser(roles = "ADMIN")
-        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaAbaixoDosCaracteresMinimos() throws Exception {
+        void shouldReturnStatus400WhenUpdatingUserPasswordWithPasswordBelowMinimumCharacters() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -691,7 +692,7 @@ public class UserControllerIT extends BaseIntegrationTests {
 
         @Test
         @WithMockUser(roles = "USER")
-        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComUsuarioSemAutorizacao() throws Exception {
+        void shouldReturnStatus400WhenUpdatingUserPasswordWithUnauthorizedUser() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -705,7 +706,7 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComUsuarioSemAutenticacao() throws Exception {
+        void shouldReturnStatus400WhenUpdatingUserPasswordWithUserWithoutAuthentication() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -720,7 +721,7 @@ public class UserControllerIT extends BaseIntegrationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void deveRetornarStatus404AoAtualizarSenhaDeUsuarioComIdInexistente() throws Exception {
+        void shouldReturnStatus404WhenUpdatingUserPasswordWithNoExistentId() throws Exception {
             long falseID = 999L;
 
             UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SenhaSegura3000");
@@ -731,5 +732,55 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .andDo(print())
                     .andExpect(status().isNotFound());
         }
+    }
+
+    @Nested
+    class deleteUserTest {
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus204WhenUserIsSuccessfullyDeleted() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            mockMvc.perform(delete("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenTryingToDeleteUserWithUnauthorizedUser() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            mockMvc.perform(delete("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void shouldReturnStatus403WhenTryingToDeleteUserWithUserWithoutAuthentication() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            mockMvc.perform(delete("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus404WhenTryingToDeleteUserWithInvalidId() throws Exception {
+            long userID = 999L;
+
+            mockMvc.perform(delete("/users/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }        
     }
 }
