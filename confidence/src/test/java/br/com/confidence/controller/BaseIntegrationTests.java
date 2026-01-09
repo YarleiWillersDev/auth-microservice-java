@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -45,6 +46,9 @@ public abstract class BaseIntegrationTests {
     @Autowired
     protected PasswordResetTokenRepository passwordResetTokenRepository;
 
+    @Autowired
+    protected PasswordEncoder passwordEncoder;
+
     @AfterEach
     void tearDown() {
         passwordResetTokenRepository.deleteAll();
@@ -70,7 +74,7 @@ public abstract class BaseIntegrationTests {
         User user = new User();
         user.setName("Yarlei");
         user.setEmail("admin@gmail.com");
-        user.setPassword("@SenhaSegura123");
+        user.setPassword(passwordEncoder.encode("@SenhaSegura123"));
 
         List<Role> roles = new ArrayList<>();
         roles.add(createAdminRoleForTest());
