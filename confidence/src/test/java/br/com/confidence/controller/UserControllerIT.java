@@ -1,6 +1,7 @@
 package br.com.confidence.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -573,7 +574,8 @@ public class UserControllerIT extends BaseIntegrationTests {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
-            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SenhaSegura3000");
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    "!SenhaSegura3000");
 
             mockMvc.perform(patch("/users/password/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -590,7 +592,8 @@ public class UserControllerIT extends BaseIntegrationTests {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
-            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", null);
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    null);
 
             mockMvc.perform(patch("/users/password/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -612,7 +615,7 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
                     .andDo(print())
-                    .andExpect(status().isBadRequest());   
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -621,7 +624,8 @@ public class UserControllerIT extends BaseIntegrationTests {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
-            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!senhasegura123");
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    "!senhasegura123");
 
             mockMvc.perform(patch("/users/password/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -636,7 +640,8 @@ public class UserControllerIT extends BaseIntegrationTests {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
-            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SENHASEGURA123");
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    "!SENHASEGURA123");
 
             mockMvc.perform(patch("/users/password/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -651,7 +656,8 @@ public class UserControllerIT extends BaseIntegrationTests {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
-            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "SenhaSegura@@@");
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    "SenhaSegura@@@");
 
             mockMvc.perform(patch("/users/password/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -666,7 +672,8 @@ public class UserControllerIT extends BaseIntegrationTests {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
-            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "SenhaSegura1234");
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    "SenhaSegura1234");
 
             mockMvc.perform(patch("/users/password/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -674,16 +681,17 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .andDo(print())
                     .andExpect(status().isBadRequest());
         }
-        
+
         @Test
         @WithMockUser(roles = "ADMIN")
         void shouldReturnStatus400WhenUpdatingUserPasswordWithPasswordBelowMinimumCharacters() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
-             UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "@23456789Aa");
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    "@23456789Aa");
 
-             mockMvc.perform(patch("/users/password/{id}", userID)
+            mockMvc.perform(patch("/users/password/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
                     .andDo(print())
@@ -696,7 +704,8 @@ public class UserControllerIT extends BaseIntegrationTests {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
-            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SenhaSegura3000");
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    "!SenhaSegura3000");
 
             mockMvc.perform(patch("/users/password/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -710,7 +719,8 @@ public class UserControllerIT extends BaseIntegrationTests {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
-            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SenhaSegura3000");
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    "!SenhaSegura3000");
 
             mockMvc.perform(patch("/users/password/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -724,7 +734,8 @@ public class UserControllerIT extends BaseIntegrationTests {
         void shouldReturnStatus404WhenUpdatingUserPasswordWithNoExistentId() throws Exception {
             long falseID = 999L;
 
-            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SenhaSegura3000");
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123",
+                    "!SenhaSegura3000");
 
             mockMvc.perform(patch("/users/password/{id}", falseID)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -781,6 +792,59 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
                     .andExpect(status().isNotFound());
-        }        
+        }
+    }
+
+    @Nested
+    class searchByEmailUserTest {
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus200AoBuscarUsuarioPorEmailComDadosCorretos() throws Exception {
+            User user = createAdminUserForTest();
+
+            mockMvc.perform(get("/users/by-email")
+                    .param("email", user.getEmail())
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").exists())
+                    .andExpect(jsonPath("$.name").value(user.getName()))
+                    .andExpect(jsonPath("$.email").value(user.getEmail()));
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void deveRetornarStatus403AoBuscarUsuarioPorEmailComUsuarioNãoAutorizado() throws Exception {
+            User user = createAdminUserForTest();
+
+            mockMvc.perform(get("/users/by-email")
+                    .param("email", user.getEmail())
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void deveRetornarStatus403AoBuscarUsuarioPorEmailComUsuarioNãoAutenticado() throws Exception {
+            User user = createAdminUserForTest();
+
+            mockMvc.perform(get("/users/by-email")
+                    .param("email", user.getEmail())
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus404AoBuscarUsuarioPorEmailComEmailNaoCadastrado() throws Exception {
+
+            mockMvc.perform(get("/users/by-email")
+                    .param("email", "TesteEmail@email.com")
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }
     }
 }
