@@ -16,6 +16,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 import br.com.confidence.dto.user.UserEmailUpdateRequest;
+import br.com.confidence.dto.user.UserPasswordUpdateRequest;
 import br.com.confidence.dto.user.UserRequest;
 import br.com.confidence.dto.user.UserUpdateRequest;
 import br.com.confidence.model.user.User;
@@ -544,21 +545,148 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .andDo(print())
                     .andExpect(status().isNotFound());
         }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void shouldReturnStatus404WhenTryingToUpdateEmailWithNonExistentUserId() throws Exception {
+            createAdminUserForTest();
+            User user = createNormalUserForTest();
+            long userID = user.getId();
+
+            UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("admin@gmail.com");
+
+            mockMvc.perform(patch("/users/email/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isConflict());
+        }
     }
 
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void shouldReturnStatus404WhenTryingToUpdateEmailWithNonExistentUserId() throws Exception {
-        createAdminUserForTest();
-        User user = createNormalUserForTest();
-        long userID = user.getId();
+    @Nested
+    class updateUserPasswordTest {
 
-        UserEmailUpdateRequest userEmailUpdateRequest = new UserEmailUpdateRequest("admin@gmail.com");
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus200AoAtualizarSenhaDeUsuarioComDadosCorretos() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
 
-        mockMvc.perform(patch("/users/email/{id}", userID)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
-                .andDo(print())
-                .andExpect(status().isConflict());
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SenhaSegura3000");
+
+            mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").exists())
+                    .andExpect(jsonPath("$.name").value(user.getName()));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaNull() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", null);
+
+            mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaVazia() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "");
+
+            mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());   
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaSemLetraMaiuscula() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!senhasegura123");
+
+            mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaSemLetraMinuscula() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "!SENHASEGURA123");
+
+            mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaSemNumeros() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "SenhaSegura@@@");
+
+            mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaSemSimbolo() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+            UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "SenhaSegura1234");
+
+            mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
+        
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornarStatus400AoAtualizarSenhaDeUsuarioComSenhaAbaixoDosCaracteresMinimos() throws Exception {
+            User user = createAdminUserForTest();
+            long userID = user.getId();
+
+             UserPasswordUpdateRequest userPasswordUpdateRequest = new UserPasswordUpdateRequest("@SenhaSegura123", "@23456789Aa");
+
+             mockMvc.perform(patch("/users/password/{id}", userID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }   
     }
 }
