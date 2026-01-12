@@ -24,6 +24,7 @@ import br.com.confidence.dto.user.UserResponse;
 import br.com.confidence.dto.user.UserUpdateRequest;
 import br.com.confidence.service.user.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 
 @RestController
 @Validated
@@ -67,13 +68,13 @@ public class UserController {
     }
 
     @GetMapping("/by-email")
-    public ResponseEntity<UserResponse> searchByEmail(@RequestParam String email) {
+    public ResponseEntity<UserResponse> searchByEmail(@NotBlank @RequestParam String email) {
         UserResponse user = userService.searchByEmail(email);
         return ResponseEntity.ok(user);
     }
 
     @GetMapping("/by-name")
-    public ResponseEntity<List<UserResponse>> searchByName(@RequestParam String name) {
+    public ResponseEntity<List<UserResponse>> searchByName(@NotBlank @RequestParam String name) {
         List<UserResponse> users = userService.searchByName(name);
         return ResponseEntity.ok(users);
     }
