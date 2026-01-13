@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -942,6 +944,46 @@ public class UserControllerIT extends BaseIntegrationTests {
 
                         mockMvc.perform(get("/users/by-name")
                                         .param("name", name)
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                        .andDo(print())
+                                        .andExpect(status().isForbidden());
+                }
+
+        }
+
+        @Nested
+        class listAllUserTest {
+
+                @Test
+                @WithMockUser(roles = "ADMIN")
+                void deveRetornarStatus200AoListarTodosUsuarios() throws Exception {
+                        createAdminRoleForTest();
+
+                        mockMvc.perform(get("/users")
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                        .andDo(print())
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$").isArray())
+                                        .andExpect(jsonPath("$").isArray())
+                                        .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(2))));
+                }
+
+                @Test
+                @WithMockUser(roles = "USER")
+                void deveRetornarStatus403AoListarTodosUsuariosComUsuarioSemAutorizacao() throws Exception {
+                        createAdminRoleForTest();
+
+                        mockMvc.perform(get("/users")
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                        .andDo(print())
+                                        .andExpect(status().isForbidden());
+                }
+
+                @Test
+                void deveRetornarStatus403AoListarTodosUsuariosComUsuarioSemAutenticacao() throws Exception {
+                        createAdminRoleForTest();
+
+                        mockMvc.perform(get("/users")
                                         .contentType(MediaType.APPLICATION_JSON))
                                         .andDo(print())
                                         .andExpect(status().isForbidden());
