@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
+import br.com.confidence.dto.authentication.AuthenticationRequest;
 import br.com.confidence.dto.authentication.RegisterRequest;
 
 public class AuthControllerIT extends BaseIntegrationTests {
@@ -232,6 +233,118 @@ public class AuthControllerIT extends BaseIntegrationTests {
 					.andDo(print())
 					.andExpect(status().isConflict());
 
+		}
+
+	}
+
+	@Nested
+	class loginAuthTest {
+
+		@Test
+		void shouldReturnStatus200whenLoginIsCompleted() throws Exception {
+			createNormalUserForTest();
+
+			AuthenticationRequest authenticationRequest = new AuthenticationRequest(
+					"usertest@gmail.com",
+					"@SenhaSegura123");
+
+			mockMvc.perform(post("/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(authenticationRequest)))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+					.andExpect(jsonPath("$.token").exists());
+		}
+
+		@Test
+		void shouldReturnStatus400WhenLoginWithEmptyEmail() throws Exception {
+			AuthenticationRequest authenticationRequest = new AuthenticationRequest(
+					"",
+					"@SenhaSegura123");
+
+			mockMvc.perform(post("/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(authenticationRequest)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void shouldReturnStatus400WhenLoginWithEmailNull() throws Exception {
+			AuthenticationRequest authenticationRequest = new AuthenticationRequest(
+					null,
+					"@SenhaSegura123");
+
+			mockMvc.perform(post("/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(authenticationRequest)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void shouldReturnStatus400WhenLoginWithEmptyPassword() throws Exception {
+			AuthenticationRequest authenticationRequest = new AuthenticationRequest(
+					"usertest@gmail.com",
+					"");
+
+			mockMvc.perform(post("/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(authenticationRequest)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void shouldReturnStatus400WhenLoginWithNullPassword() throws Exception {
+			AuthenticationRequest authenticationRequest = new AuthenticationRequest(
+					"usertest@gmail.com",
+					null);
+
+			mockMvc.perform(post("/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(authenticationRequest)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void shouldReturnStatus401WhenLoginWithUnregisteredEmail() throws Exception {
+			createNormalUserForTest();
+
+			AuthenticationRequest authenticationRequest = new AuthenticationRequest(
+					"emailInvalido@email.com",
+					"@SenhaSegura123");
+
+			mockMvc.perform(post("/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(authenticationRequest)))
+					.andDo(print())
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value(401))
+					.andExpect(jsonPath("$.error").value("Unauthorized"))
+					.andExpect(jsonPath("$.message").value("Invalid credentials"))
+					.andExpect(jsonPath("$.path").value("/auth/login"));
+		}
+
+		@Test
+		void shouldReturnStatus401WhenLoginWithUnregisteredPassword() throws Exception {
+			createNormalUserForTest();
+
+			AuthenticationRequest authenticationRequest = new AuthenticationRequest(
+					"usertest@gmail.com",
+					"@SenhaSegura12345678");
+
+			mockMvc.perform(post("/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(authenticationRequest)))
+					.andDo(print())
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value(401))
+					.andExpect(jsonPath("$.error").value("Unauthorized"))
+					.andExpect(jsonPath("$.message").value("Invalid credentials"))
+					.andExpect(jsonPath("$.path").value("/auth/login"));
 		}
 	}
 }

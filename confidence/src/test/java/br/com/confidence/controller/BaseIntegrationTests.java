@@ -86,8 +86,8 @@ public abstract class BaseIntegrationTests {
     protected User createNormalUserForTest() {
         User user = new User();
         user.setName("Yarlei");
-        user.setEmail("user@gmail.com");
-        user.setPassword("@SenhaSegura123");
+        user.setEmail("usertest@gmail.com");
+        user.setPassword(passwordEncoder.encode("@SenhaSegura123"));
 
         List<Role> roles = new ArrayList<>();
         roles.add(createUserRoleForTest());
