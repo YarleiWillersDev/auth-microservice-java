@@ -16,12 +16,13 @@ import jakarta.validation.ConstraintViolationException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -87,6 +88,20 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request);
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(
+            AuthenticationException ex,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid credentials", request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex,
             HttpServletRequest request) {
@@ -95,45 +110,26 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(
-            ConstraintViolationException ex, HttpServletRequest request) {
+            ConstraintViolationException ex,
+            HttpServletRequest request) {
+        String message = ex.getConstraintViolations().stream()
+                .map(v -> String.format("%s: %s", v.getPropertyPath(), v.getMessage()))
+                .collect(Collectors.joining("; "));
 
-        List<String> errors = ex.getConstraintViolations().stream()
-                .map(violation -> String.format("%s: %s",
-                        violation.getPropertyPath(), violation.getMessage()))
-                .collect(Collectors.toList());
-
-        String message = String.join("; ", errors);
-
-        ErrorResponse body = new ErrorResponse(
-                Instant.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                message,
-                request.getRequestURI());
-
-        return ResponseEntity.badRequest().body(body);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidRequest(MethodArgumentNotValidException ex,
+    public ResponseEntity<ErrorResponse> handleInvalidRequest(
+            MethodArgumentNotValidException ex,
             HttpServletRequest request) {
 
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-
-        String defaultMessage = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(error -> error.getDefaultMessage().replaceFirst(error.getField() + " ", ""))
+        String msg = ex.getBindingResult().getFieldErrors().stream()
+                .map(err -> err.getDefaultMessage()
+                        .replaceFirst(err.getField() + " ", ""))
                 .collect(Collectors.joining("; "));
 
-        ErrorResponse body = new ErrorResponse(
-                Instant.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                defaultMessage,
-                request.getRequestURI());
-
-        return ResponseEntity.status(status).body(body);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, msg, request);
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(Exception ex,
@@ -148,4 +144,20 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(status).body(body);
     }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request) {
+
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI());
+
+        return ResponseEntity.status(status).body(body);
+    }
+
 }
