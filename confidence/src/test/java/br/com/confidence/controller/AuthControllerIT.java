@@ -1,19 +1,49 @@
 package br.com.confidence.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
 import br.com.confidence.dto.authentication.AuthenticationRequest;
+import br.com.confidence.dto.authentication.ForgotPasswordRequestDTO;
 import br.com.confidence.dto.authentication.RegisterRequest;
+import br.com.confidence.model.auth.PasswordResetToken;
+import br.com.confidence.service.email.EmailService;
 
 public class AuthControllerIT extends BaseIntegrationTests {
+
+	@MockBean
+	private EmailService emailService;
+
+	@Captor
+	private ArgumentCaptor<String> toCaptor;
+
+	@Captor
+	private ArgumentCaptor<String> subjectCaptor;
+
+	@Captor
+	private ArgumentCaptor<String> bodyCaptor;
 
 	@Nested
 	class registerAuthTest {
@@ -345,6 +375,101 @@ public class AuthControllerIT extends BaseIntegrationTests {
 					.andExpect(jsonPath("$.error").value("Unauthorized"))
 					.andExpect(jsonPath("$.message").value("Invalid credentials"))
 					.andExpect(jsonPath("$.path").value("/auth/login"));
+		}
+	}
+
+	@Nested
+	class forgotPasswordTest {
+
+		@Test
+		void shouldReturnStatus204WhenCreatingRedefinedTokenAndSendingEmail() throws Exception {
+			// Arrange
+			createNormalUserForTest();
+
+			ForgotPasswordRequestDTO dto = new ForgotPasswordRequestDTO("usertest@gmail.com");
+
+			ArgumentCaptor<String> toCaptor = ArgumentCaptor.forClass(String.class);
+			ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
+			ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+
+			// Act + Assert (HTTP)
+			mockMvc.perform(post("/auth/forgot-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(dto)))
+					.andDo(print())
+					.andExpect(status().isNoContent());
+
+			// Assert (email sent)
+			verify(emailService, times(1))
+					.sendSimpleMail(toCaptor.capture(), subjectCaptor.capture(), bodyCaptor.capture());
+
+			assertEquals("usertest@gmail.com", toCaptor.getValue());
+			assertEquals("Password reset request", subjectCaptor.getValue());
+
+			String body = bodyCaptor.getValue();
+			assertNotNull(body);
+			assertTrue(body.contains("token="), "Email body should contain token param");
+
+			// Extract token from body
+			Pattern p = Pattern.compile("token=([\\w-]+)");
+			Matcher m = p.matcher(body);
+			assertTrue(m.find(), "Email body should contain token value");
+			String tokenValue = m.group(1);
+
+			assertNotNull(tokenValue);
+			assertFalse(tokenValue.isBlank());
+
+			// Assert (persisted token + associated with the correct user + expiration)
+			PasswordResetToken token = passwordResetTokenRepository.findByTokenWithUser(tokenValue)
+					.orElseThrow(() -> new AssertionError("Token should be persisted"));
+
+			assertEquals("usertest@gmail.com", token.getUser().getEmail());
+			assertEquals(tokenValue, token.getToken());
+			assertEquals("usertest@gmail.com", token.getUser().getEmail());
+			assertTrue(token.getExpiryDate().isAfter(LocalDateTime.now()),
+					"Token expiryDate should be in the future");
+		}
+
+		@Test
+		void shouldReturnStatus204WhenEmailNotRegisteredInAvailableField() throws Exception {
+			createNormalUserForTest();
+
+			ForgotPasswordRequestDTO requestDTO = new ForgotPasswordRequestDTO("falseemail@email.com");
+
+			mockMvc.perform(post("/auth/forgot-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isNoContent());
+
+			verify(emailService, never()).sendSimpleMail(anyString(), anyString(), anyString());
+		}
+
+		@Test
+		void shouldReturnStatus400WhenInformedEmailWithInvalidFormatInAvailableField() throws Exception {
+			createNormalUserForTest();
+
+			ForgotPasswordRequestDTO requestDTO = new ForgotPasswordRequestDTO("usertest_gmail.com");
+
+			mockMvc.perform(post("/auth/forgot-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void shouldReturnStatus400WhenInformedEmailWithSizeSmallerThanMinimumAcceptedInAvailableField()
+				throws Exception {
+			createNormalUserForTest();
+
+			ForgotPasswordRequestDTO requestDTO = new ForgotPasswordRequestDTO("user@email.com");
+
+			mockMvc.perform(post("/auth/forgot-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
 		}
 	}
 }
