@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,7 +29,9 @@ import org.springframework.http.MediaType;
 import br.com.confidence.dto.authentication.AuthenticationRequest;
 import br.com.confidence.dto.authentication.ForgotPasswordRequestDTO;
 import br.com.confidence.dto.authentication.RegisterRequest;
+import br.com.confidence.dto.authentication.ResetPasswordRequestDTO;
 import br.com.confidence.model.auth.PasswordResetToken;
+import br.com.confidence.model.user.User;
 import br.com.confidence.service.email.EmailService;
 
 public class AuthControllerIT extends BaseIntegrationTests {
@@ -470,6 +473,126 @@ public class AuthControllerIT extends BaseIntegrationTests {
 					.content(objectMapper.writeValueAsString(requestDTO)))
 					.andDo(print())
 					.andExpect(status().isBadRequest());
+		}
+	}
+
+	@Nested
+	class resetPasswordTest {
+
+		@Test
+		void deveRetornarStatus204AoEfetuarAlteracaoDeSenhaComDadosETokenValido() throws Exception {
+			String token = createValidPasswordResetToken();
+			String newPassword = "NewPassword@123";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(token, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isNoContent());
+
+			assertTrue(passwordResetTokenRepository.findByToken(token).isEmpty());
+
+			User updated = userRepository.findByEmail("usertest@gmail.com").orElseThrow();
+			assertTrue(passwordEncoder.matches(newPassword, updated.getPassword()));
+
+		}
+
+		@Test
+		void deveRetornarStatus400AoEfetuarAlteracaoDeSenhaComTokenNull() throws Exception {
+			String token = null;
+			String newPassword = "NewPassword@123";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(token, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+
+		}
+
+		@Test
+		void deveRetornarStatus400AoEfetuarAlteracaoDeSenhaComTokenVazio() throws Exception {
+			String token = "";
+			String newPassword = "NewPassword@123";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(token, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+
+		}
+
+		@Test
+		void deveRetonarStatus400AoEfetuarAlteracaoDeSenhaComTokenInvalido() throws Exception {
+			String token = "InvalidPasswordResetToken";
+			String newPassword = "NewPassword@123";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(token, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void deveRetornarStatus400AoEfetuarAlteracaoDeSenhaComTokenExpirado() throws Exception {
+			User user = createNormalUserForTest();
+
+			String tokenValue = UUID.randomUUID().toString();
+			String newPassword = "NewPassword@123";
+
+			PasswordResetToken token = new PasswordResetToken();
+			token.setToken(tokenValue);
+			token.setUser(user);
+			token.setExpiryDate(LocalDateTime.now().minusHours(1));
+
+			passwordResetTokenRepository.save(token);
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(tokenValue, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void deveRetornarStatus400AoEfetuarAlteracaoDeSenhaComTokenUtilizado() throws Exception {
+			String tokenValue = createValidPasswordResetToken();
+			String newPassword = "NewPassword@123";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(tokenValue, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isNoContent());
+
+			User afterFirst = userRepository.findByEmail("usertest@gmail.com").orElseThrow();
+			String encodedAfterFirst = afterFirst.getPassword();
+			assertTrue(passwordEncoder.matches(newPassword, encodedAfterFirst));
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+
+			assertTrue(passwordResetTokenRepository.findByToken(tokenValue).isEmpty());
+
+			User afterSecond = userRepository.findByEmail("usertest@gmail.com").orElseThrow();
+			assertEquals(encodedAfterFirst, afterSecond.getPassword());
 		}
 	}
 }

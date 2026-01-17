@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import br.com.confidence.exception.auth.PasswordResetTokenExpiredException;
 import br.com.confidence.exception.user.InvalidUserPasswordException;
 import br.com.confidence.model.auth.PasswordResetToken;
 import br.com.confidence.model.user.User;
@@ -60,10 +61,10 @@ public class PasswordRecoveryService {
 
     public void resetPassword(String tokenValue, String newPassword) {
         var token = tokenRepository.findByToken(tokenValue)
-                .orElseThrow(() -> new InvalidUserPasswordException("Invalid password reset token"));
+                .orElseThrow(() -> new InvalidUserPasswordException("Invalid or expired password reset token"));
 
         if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Password reset token has expired");
+            throw new PasswordResetTokenExpiredException("Password reset token has expired");
         }
 
         var user = token.getUser();

@@ -2,8 +2,10 @@ package br.com.confidence.controller;
 
 import static org.mockito.Mockito.mock;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import br.com.confidence.model.auth.PasswordResetToken;
 import br.com.confidence.model.role.Role;
 import br.com.confidence.model.user.User;
 import br.com.confidence.repository.auth.PasswordResetTokenRepository;
@@ -94,6 +97,21 @@ public abstract class BaseIntegrationTests {
         user.setRoles(roles);
 
         return userRepository.save(user);
+    }
+
+    protected String createValidPasswordResetToken() {
+        User user = createNormalUserForTest();
+
+        String tokenValue = UUID.randomUUID().toString();
+
+        PasswordResetToken token =  new PasswordResetToken();
+        token.setToken(tokenValue);
+        token.setUser(user);
+        token.setExpiryDate(LocalDateTime.now().plusHours(1));
+        
+        passwordResetTokenRepository.save(token);
+
+        return tokenValue;
     }
 
     @TestConfiguration

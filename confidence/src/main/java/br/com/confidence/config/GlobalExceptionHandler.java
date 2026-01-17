@@ -1,6 +1,7 @@
 package br.com.confidence.config;
 
 import br.com.confidence.dto.error.ErrorResponse;
+import br.com.confidence.exception.auth.PasswordResetTokenExpiredException;
 import br.com.confidence.exception.role.InvalidRoleNameException;
 import br.com.confidence.exception.role.RoleAlreadyExistsException;
 import br.com.confidence.exception.role.RoleNotFoundException;
@@ -100,6 +101,13 @@ public class GlobalExceptionHandler {
             AccessDeniedException ex,
             HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", request);
+    }
+
+    @ExceptionHandler(PasswordResetTokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handlePasswordResetTokenExpired(
+            PasswordResetTokenExpiredException ex,
+            HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request);      
     }
 
     @ExceptionHandler(Exception.class)
