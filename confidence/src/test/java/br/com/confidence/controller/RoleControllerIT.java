@@ -81,6 +81,20 @@ public class RoleControllerIT extends BaseIntegrationTests {
         }
 
         @Test
+        void shouldReturnStatus401WhenUserDoesNotHaveAuthenticated() throws Exception {
+
+            RoleRequest roleRequest = new RoleRequest("BOSS", "Role with BOSS permission");
+
+            String requestBodyJson = objectMapper.writeValueAsString(roleRequest);
+
+            mockMvc.perform(post("/roles")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestBodyJson))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
         @WithMockUser(roles = "EMPLOYEE")
         void shouldReturnStatus403WhenUserDoesNotHaveAdminRole() throws Exception {
 
@@ -197,6 +211,24 @@ public class RoleControllerIT extends BaseIntegrationTests {
         }
 
         @Test
+        void shouldReturnStatus401WhenAttemptingUpdateRoleWithUnauthenticatedUser() throws Exception {
+            Role role = createAdminRoleForTest();
+
+            long roleID = role.getId();
+
+            RoleUpdateRequest roleUpdateRequest = new RoleUpdateRequest("LITTLE BOSS",
+                    "Role with LITTLE BOSS permission");
+
+            String requestBodyJson = objectMapper.writeValueAsString(roleUpdateRequest);
+
+            mockMvc.perform(put("/roles/{id}", roleID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestBodyJson))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
         @WithMockUser(roles = "ADMIN")
         void shouldReturnStatus404WhenTryingUpdateRoleWithNonExistentID() throws Exception {
             long roleID = 999L;
@@ -218,24 +250,6 @@ public class RoleControllerIT extends BaseIntegrationTests {
         @Test
         @WithMockUser(roles = "USER")
         void shouldReturnStatus403WhenAttemptingUpdateRoleWithUnauthorizedUser() throws Exception {
-            Role role = createAdminRoleForTest();
-
-            long roleID = role.getId();
-
-            RoleUpdateRequest roleUpdateRequest = new RoleUpdateRequest("LITTLE BOSS",
-                    "Role with LITTLE BOSS permission");
-
-            String requestBodyJson = objectMapper.writeValueAsString(roleUpdateRequest);
-
-            mockMvc.perform(put("/roles/{id}", roleID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestBodyJson))
-                    .andDo(print())
-                    .andExpect(status().isForbidden());
-        }
-
-        @Test
-        void shouldReturnStatus403WhenAttemptingUpdateRoleWithUnauthenticatedUser() throws Exception {
             Role role = createAdminRoleForTest();
 
             long roleID = role.getId();
@@ -300,8 +314,7 @@ public class RoleControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus403WhenAttemptingDeleteRoleWithUnauthorizedUser() throws Exception {
+        void shouldReturnStatus401WhenAttemptingDeleteRoleWithUnauthenticatedUser() throws Exception {
             Role role = createAdminRoleForTest();
 
             long roleID = role.getId();
@@ -309,11 +322,12 @@ public class RoleControllerIT extends BaseIntegrationTests {
             mockMvc.perform(delete("/roles/{id}", roleID)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus403WhenAttemptingDeleteRoleWithUnauthenticatedUser() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenAttemptingDeleteRoleWithUnauthorizedUser() throws Exception {
             Role role = createAdminRoleForTest();
 
             long roleID = role.getId();
@@ -359,8 +373,7 @@ public class RoleControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus403WhenAttemptingGetRoleWithUnauthorizedUser() throws Exception {
+        void shouldReturnStatus401WhenAttemptingGetRoleWithUnauthenticatedUser() throws Exception {
             Role role = createAdminRoleForTest();
 
             long roleID = role.getId();
@@ -368,11 +381,12 @@ public class RoleControllerIT extends BaseIntegrationTests {
             mockMvc.perform(get("/roles/{id}", roleID)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus403WhenAttemptingGetRoleWithUnauthenticatedUser() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenAttemptingGetRoleWithUnauthorizedUser() throws Exception {
             Role role = createAdminRoleForTest();
 
             long roleID = role.getId();
@@ -434,23 +448,23 @@ public class RoleControllerIT extends BaseIntegrationTests {
                     .param("name", roleName)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isOk());   
+                    .andExpect(status().isOk());
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus403WhenSearchingForRoleByNameWithUnauthorizedUser() throws Exception {
+        void shouldReturnStatus401WhenSearchingForProductByNameWithUnauthenticatedUser() throws Exception {
             Role role = createAdminRoleForTest();
 
             mockMvc.perform(get("/roles/search")
                     .param("name", role.getName())
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus403WhenSearchingForProductByNameWithUnauthenticatedUser() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenSearchingForRoleByNameWithUnauthorizedUser() throws Exception {
             Role role = createAdminRoleForTest();
 
             mockMvc.perform(get("/roles/search")
@@ -476,6 +490,16 @@ public class RoleControllerIT extends BaseIntegrationTests {
         }
 
         @Test
+        void shouldReturnStatus401WhenAttemptingListRolesWithUnauthenticatedUser() throws Exception {
+            createAdminRoleForTest();
+
+            mockMvc.perform(get("/roles")
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
         @WithMockUser(roles = "USER")
         void shouldReturnStatus403WhenAttemptingListRolesWithUnauthorizedUser() throws Exception {
             createAdminRoleForTest();
@@ -485,16 +509,5 @@ public class RoleControllerIT extends BaseIntegrationTests {
                     .andDo(print())
                     .andExpect(status().isForbidden());
         }
-
-        @Test
-        void shouldReturnStatus403WhenAttemptingListRolesWithUnauthenticatedUser() throws Exception {
-            createAdminRoleForTest();
-
-            mockMvc.perform(get("/roles")
-                    .contentType(MediaType.APPLICATION_JSON))
-                    .andDo(print())
-                    .andExpect(status().isForbidden());
-        }
     }
 }
-

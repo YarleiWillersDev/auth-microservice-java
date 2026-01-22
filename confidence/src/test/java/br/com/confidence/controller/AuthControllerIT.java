@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -25,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import br.com.confidence.dto.authentication.AuthenticationRequest;
 import br.com.confidence.dto.authentication.ForgotPasswordRequestDTO;
@@ -691,6 +693,33 @@ public class AuthControllerIT extends BaseIntegrationTests {
 					.content(objectMapper.writeValueAsString(requestDTO)))
 					.andDo(print())
 					.andExpect(status().isBadRequest());
+		}
+	}
+
+	@Nested
+	class userInformationTest {
+		@Test
+		@WithMockUser(username = "admin@confidence.com", roles = { "USER", "ADMIN" })
+		void shouldReturnStatus200WhenSearchingForUserInformationWithValidData() throws Exception {
+			mockMvc.perform(get("/auth/me"))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.email").value("admin@confidence.com"))
+					.andExpect(jsonPath("$.roles").isArray());
+		}
+
+		@Test
+		void shouldReturnStatus401WhenSearchingUserInformationWithoutAuthentication() throws Exception {
+			mockMvc.perform(get("/auth/me"))
+					.andDo(print())
+					.andExpect(status().isUnauthorized());
+		}
+
+		@Test
+		@WithMockUser(username = "user@confidence.com", roles = { "GUEST" })
+		void shouldReturn403WhenAuthenticatedButWithoutRequiredRole() throws Exception {
+			mockMvc.perform(get("/auth/me"))
+					.andExpect(status().isForbidden());
 		}
 	}
 }
