@@ -480,7 +480,7 @@ public class AuthControllerIT extends BaseIntegrationTests {
 	class resetPasswordTest {
 
 		@Test
-		void deveRetornarStatus204AoEfetuarAlteracaoDeSenhaComDadosETokenValido() throws Exception {
+		void shouldReturnStatus204WhenChangePasswordWithValidDataAndToken() throws Exception {
 			String token = createValidPasswordResetToken();
 			String newPassword = "NewPassword@123";
 
@@ -500,7 +500,7 @@ public class AuthControllerIT extends BaseIntegrationTests {
 		}
 
 		@Test
-		void deveRetornarStatus400AoEfetuarAlteracaoDeSenhaComTokenNull() throws Exception {
+		void mustReturnStatus400WhenPerformingPasswordChangeWithTokenNull() throws Exception {
 			String token = null;
 			String newPassword = "NewPassword@123";
 
@@ -515,7 +515,7 @@ public class AuthControllerIT extends BaseIntegrationTests {
 		}
 
 		@Test
-		void deveRetornarStatus400AoEfetuarAlteracaoDeSenhaComTokenVazio() throws Exception {
+		void mustReturnStatus400WhenPerformingPasswordChangeWithEmptyToken() throws Exception {
 			String token = "";
 			String newPassword = "NewPassword@123";
 
@@ -530,7 +530,7 @@ public class AuthControllerIT extends BaseIntegrationTests {
 		}
 
 		@Test
-		void deveRetonarStatus400AoEfetuarAlteracaoDeSenhaComTokenInvalido() throws Exception {
+		void mustReturnStatus400WhenChangingPasswordWithInvalidToken() throws Exception {
 			String token = "InvalidPasswordResetToken";
 			String newPassword = "NewPassword@123";
 
@@ -544,7 +544,7 @@ public class AuthControllerIT extends BaseIntegrationTests {
 		}
 
 		@Test
-		void deveRetornarStatus400AoEfetuarAlteracaoDeSenhaComTokenExpirado() throws Exception {
+		void shouldReturnStatus400WhenChangePasswordWithExpiredToken() throws Exception {
 			User user = createNormalUserForTest();
 
 			String tokenValue = UUID.randomUUID().toString();
@@ -567,7 +567,7 @@ public class AuthControllerIT extends BaseIntegrationTests {
 		}
 
 		@Test
-		void deveRetornarStatus400AoEfetuarAlteracaoDeSenhaComTokenUtilizado() throws Exception {
+		void shouldReturnStatus400WhenPasswordChangeWithTokenUsed() throws Exception {
 			String tokenValue = createValidPasswordResetToken();
 			String newPassword = "NewPassword@123";
 
@@ -593,6 +593,104 @@ public class AuthControllerIT extends BaseIntegrationTests {
 
 			User afterSecond = userRepository.findByEmail("usertest@gmail.com").orElseThrow();
 			assertEquals(encodedAfterFirst, afterSecond.getPassword());
+		}
+
+		@Test
+		void mustReturnStatus400WhenPerformingPasswordChangeWithPasswordNull() throws Exception {
+			String tokenValue = createValidPasswordResetToken();
+			String newPassword = null;
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(tokenValue, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void mustReturnStatus400WhenPerformingPasswordChangeWithEmptyPassword() throws Exception {
+			String tokenValue = createValidPasswordResetToken();
+			String newPassword = "";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(tokenValue, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void mustReturnStatus400WhenChangingPasswordWithMinimumLettersMinor() throws Exception {
+			String tokenValue = createValidPasswordResetToken();
+			String newPassword = "@Aa45678911";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(tokenValue, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void mustReturnStatus400WhenChangingPasswordWithPasswordWithoutCapitalLetter() throws Exception {
+			String tokenValue = createValidPasswordResetToken();
+			String newPassword = "@novasenhasegura123";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(tokenValue, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void mustReturnStatus400WhenChangingPasswordWithPasswordWithoutLowerLetter() throws Exception {
+			String tokenValue = createValidPasswordResetToken();
+			String newPassword = "@NOVASENHASEGURA123";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(tokenValue, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void shouldReturnStatus400WhenChangePasswordWithPasswordWithoutNumbers() throws Exception {
+			String tokenValue = createValidPasswordResetToken();
+			String newPassword = "@NovaSenhaSegura";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(tokenValue, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void mustReturnStatus400WhenChangingPasswordWithPasswordWithoutSpecialCharacter() throws Exception {
+			String tokenValue = createValidPasswordResetToken();
+			String newPassword = "NovaSenhaSegura123";
+
+			ResetPasswordRequestDTO requestDTO = new ResetPasswordRequestDTO(tokenValue, newPassword);
+
+			mockMvc.perform(post("/auth/reset-password")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(requestDTO)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
 		}
 	}
 }

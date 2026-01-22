@@ -14,6 +14,7 @@ import br.com.confidence.model.user.User;
 import br.com.confidence.repository.auth.PasswordResetTokenRepository;
 import br.com.confidence.repository.user.UserRepository;
 import br.com.confidence.service.email.EmailService;
+import br.com.confidence.validation.user.UserValidation;
 
 @Service
 public class PasswordRecoveryService {
@@ -22,16 +23,18 @@ public class PasswordRecoveryService {
     private final EmailService emailService;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserValidation userValidation;
 
     @Value("${app.frontend.reset-password-url:http://localhost:3000/reset-password}")
     private String resetPasswordBaseUrl;
 
     public PasswordRecoveryService(UserRepository userRepository, PasswordResetTokenRepository tokenRepository,
-            EmailService emailService, PasswordEncoder passwordEncoder) {
+            EmailService emailService, PasswordEncoder passwordEncoder, UserValidation userValidation) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
+        this.userValidation = userValidation;
     }
 
     public void requestPasswordReset(String email) {
@@ -66,6 +69,8 @@ public class PasswordRecoveryService {
         if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
             throw new PasswordResetTokenExpiredException("Password reset token has expired");
         }
+
+        userValidation.validatePasswordUserRequest(newPassword);
 
         var user = token.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
