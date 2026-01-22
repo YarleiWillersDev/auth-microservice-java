@@ -253,8 +253,7 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus403WhenTryingToCreateUserWithUnauthorizedUser() throws Exception {
+        void shouldReturnStatus401WhenTryingToCreateUserWithUserWithoutAuthentication() throws Exception {
             UserRequest userRequest = new UserRequest("Test", "test12345@email.com", "@SenhaSegura12345");
 
             String requestBodyJson = objectMapper.writeValueAsString(userRequest);
@@ -263,11 +262,12 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBodyJson))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus403WhenTryingToCreateUserWithUserWithoutAuthentication() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenTryingToCreateUserWithUnauthorizedUser() throws Exception {
             UserRequest userRequest = new UserRequest("Test", "test12345@email.com", "@SenhaSegura12345");
 
             String requestBodyJson = objectMapper.writeValueAsString(userRequest);
@@ -364,8 +364,7 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus403WhenTryingToUpdateUserWithUnauthorizedUser() throws Exception {
+        void shouldReturnStatus401WhenTryingToUpdateUserWithUserNotAuthenticated() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -375,11 +374,12 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(userUpdateRequest)))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus403WhenTryingToUpdateUserWithUserNotAuthenticated() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenTryingToUpdateUserWithUnauthorizedUser() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -510,8 +510,7 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus403WhenTryingToUpdateEmailWithUnauthorizedUser() throws Exception {
+        void shouldReturnStatus401WhenTryingToUpdateEmailWithUnauthenticatedUser() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -521,11 +520,12 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(userEmailUpdateRequest)))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus403WhenTryingToUpdateEmailWithUnauthenticatedUser() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenTryingToUpdateEmailWithUnauthorizedUser() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -713,8 +713,7 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus400WhenUpdatingUserPasswordWithUnauthorizedUser() throws Exception {
+        void shouldReturnStatus401WhenUpdatingUserPasswordWithUserWithoutAuthentication() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -726,11 +725,12 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(userPasswordUpdateRequest)))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus400WhenUpdatingUserPasswordWithUserWithoutAuthentication() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenUpdatingUserPasswordWithUnauthorizedUser() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -778,19 +778,19 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus403WhenTryingToDeleteUserWithUnauthorizedUser() throws Exception {
+        void shouldReturnStatus401WhenTryingToDeleteUserWithUserWithoutAuthentication() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
             mockMvc.perform(delete("/users/{id}", userID)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus403WhenTryingToDeleteUserWithUserWithoutAuthentication() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenTryingToDeleteUserWithUnauthorizedUser() throws Exception {
             User user = createAdminUserForTest();
             long userID = user.getId();
 
@@ -844,19 +844,19 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus403WhenSearchingForUserByEmailWithUnauthorizedUser() throws Exception {
+        void shouldReturnStatus401WhenSearchingForUserByEmailWithUnauthenticatedUser() throws Exception {
             User user = createAdminUserForTest();
 
             mockMvc.perform(get("/users/by-email")
                     .param("email", user.getEmail())
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus403WhenSearchingForUserByEmailWithUnauthenticatedUser() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenSearchingForUserByEmailWithUnauthorizedUser() throws Exception {
             User user = createAdminUserForTest();
 
             mockMvc.perform(get("/users/by-email")
@@ -925,6 +925,18 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
 
         @Test
+        void shouldReturnStatus401WhenSearchingForUserWithUnauthenticatedUser() throws Exception {
+            createAdminRoleForTest();
+            String name = "ADMIN";
+
+            mockMvc.perform(get("/users/by-name")
+                    .param("name", name)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
         @WithMockUser(roles = "USER")
         void shouldReturnStatus403WhenSearchingForUserWithUnauthorizedUser() throws Exception {
             createAdminRoleForTest();
@@ -936,19 +948,6 @@ public class UserControllerIT extends BaseIntegrationTests {
                     .andDo(print())
                     .andExpect(status().isForbidden());
         }
-
-        @Test
-        void shouldReturnStatus403WhenSearchingForUserWithUnauthenticatedUser() throws Exception {
-            createAdminRoleForTest();
-            String name = "ADMIN";
-
-            mockMvc.perform(get("/users/by-name")
-                    .param("name", name)
-                    .contentType(MediaType.APPLICATION_JSON))
-                    .andDo(print())
-                    .andExpect(status().isForbidden());
-        }
-
     }
 
     @Nested
@@ -969,18 +968,18 @@ public class UserControllerIT extends BaseIntegrationTests {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
-        void shouldReturnStatus403WhenListingAllUsersWithUserWithoutAuthorization() throws Exception {
+        void shouldReturnStatus401WhenListingAllUsersWithUserWithoutAuthentication() throws Exception {
             createAdminRoleForTest();
 
             mockMvc.perform(get("/users")
                     .contentType(MediaType.APPLICATION_JSON))
                     .andDo(print())
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        void shouldReturnStatus403WhenListingAllUsersWithUserWithoutAuthentication() throws Exception {
+        @WithMockUser(roles = "USER")
+        void shouldReturnStatus403WhenListingAllUsersWithUserWithoutAuthorization() throws Exception {
             createAdminRoleForTest();
 
             mockMvc.perform(get("/users")
