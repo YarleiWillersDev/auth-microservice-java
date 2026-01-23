@@ -131,51 +131,41 @@ public class RoleServiceImplTest {
     class UpdateTest {
 
         @Test
-        void shouldUpdateRoleWhenDataIsValid() {
-            long id = 1L;
+        void shouldReturnStatus200WhenAttemptingUpdateRole() {
+            Role roleToUpdate = new Role();
+            roleToUpdate.setId(2L);
+            roleToUpdate.setName("BOSS");
 
-            RoleUpdateRequest request = new RoleUpdateRequest(
-                    Optional.of("NEW_ADMIN"),
-                    Optional.of("New description"));
+            RoleUpdateRequest updateRequest = new RoleUpdateRequest(
+                    "LITTLE BOSS",
+                    "New description");
 
-            Role existingRole = new Role();
-            existingRole.setId(id);
-            existingRole.setName("ADMIN");
-            existingRole.setDescription("Admin Role");
-
-            when(roleRepository.findById(id)).thenReturn(Optional.of(existingRole));
-            when(roleRepository.save(existingRole)).thenReturn(existingRole);
+            when(roleRepository.findById(2L)).thenReturn(Optional.of(roleToUpdate));
+            when(roleRepository.findByName("LITTLE BOSS")).thenReturn(Collections.emptyList());
+            when(roleRepository.save(roleToUpdate)).thenReturn(roleToUpdate);
 
             doAnswer(invocation -> {
-                Role roleArg = invocation.getArgument(0, Role.class);
-                RoleUpdateRequest reqArg = invocation.getArgument(1, RoleUpdateRequest.class);
-
-                reqArg.name().ifPresent(roleArg::setName);
-                reqArg.description().ifPresent(roleArg::setDescription);
-
+                Role role = invocation.getArgument(0);
+                RoleUpdateRequest req = invocation.getArgument(1);
+                role.setName(req.name());
+                role.setDescription(req.description());
                 return null;
-            }).when(roleUpdater).updateRoleInformation(existingRole, request);
+            }).when(roleUpdater).updateRoleInformation(roleToUpdate, updateRequest);
 
-            RoleResponse response = roleService.update(request, id);
+            RoleResponse result = roleService.update(updateRequest, 2L);
 
-            verify(roleValidation).validateRoleUpdateRequestInformation(request);
-            verify(roleUpdater).updateRoleInformation(existingRole, request);
-            verify(roleRepository).save(existingRole);
-
-            assertEquals(id, response.id());
-            assertEquals("NEW_ADMIN", response.name());
-            assertEquals("New description", response.description());
-
+            assertEquals("LITTLE BOSS", result.name());
+            assertEquals("New description", result.description());
+            verify(roleRepository).save(roleToUpdate);
         }
 
         @Test
         void shouldThrowExceptionWhenRoleNotFoundOnUpdate() {
-
             long id = 999L;
 
             RoleUpdateRequest request = new RoleUpdateRequest(
-                    Optional.of("NEW_ADMIN"),
-                    Optional.of("New description"));
+                    "NEW_ADMIN",
+                    "New description");
 
             when(roleRepository.findById(id)).thenReturn(Optional.empty());
 
@@ -187,13 +177,12 @@ public class RoleServiceImplTest {
         }
 
         @Test
-        void shouldThrowInvalidRoleNameExceptionWhenUpdateWithInvalideName() {
-
-            long id = 1;
+        void shouldThrowInvalidRoleNameExceptionWhenUpdateWithInvalidName() {
+            long id = 1L;
 
             RoleUpdateRequest request = new RoleUpdateRequest(
-                    Optional.of("jo"),
-                    Optional.of("New description"));
+                    "jo",
+                    "New description");
 
             Role existingRole = new Role();
             existingRole.setId(id);
@@ -210,7 +199,6 @@ public class RoleServiceImplTest {
             verifyNoInteractions(roleUpdater);
             verify(roleRepository, never()).save(any(Role.class));
         }
-
     }
 
     @Nested
