@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 public record ResetPasswordRequestDTO(
 
-    @NotBlank(message = "Password cannot be null/empty.")
+    @NotBlank(message = "Token cannot be null/empty.")
     String token,
 
     @NotBlank(message = "Password cannot be null/empty.")

@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 public record UserRequest(
 
     @NotBlank(message = "Name cannot be null/empty.")
-    @Size(min = 3, message = "Name must contain at least 3 letters")
+    @Size(min = 3, max = 255, message = "Name must be between 3 and 255 characters long\"")
     String name,
 
     @NotBlank(message = "Email cannot be null/empty.")

@@ -43,15 +43,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse create(UserRequest userRequest)  {
+    public UserResponse create(UserRequest userRequest) {
         userValidation.validateUserRequest(userRequest);
 
         if (userRepository.existsByEmail(userRequest.email())) {
             throw new UserAlreadyExistsException("User already exists with this email");
         }
 
-        Role defaultRole = roleRepository.findByName("ROLE_USER")
-            .orElseThrow(() -> new RoleNotFoundException("Default role not found"));
+        List<Role> roles = roleRepository.findByName("USER");
+        Role defaultRole = roles.stream()
+                .findFirst()
+                .orElseThrow(() -> new RoleNotFoundException("Default role not found"));
 
         User user = UserMapper.toEntity(userRequest);
         user.setPassword(passwordEncoder.encode(userRequest.password()));
@@ -66,8 +68,8 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse update(UserUpdateRequest userRequest, long id) {
         User user = userRepository.findById(id)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
-        
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
         String newName = userRequest.name();
         userValidation.validateNameUserRequest(newName);
 
@@ -81,7 +83,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse updateEmail(UserEmailUpdateRequest userRequest, long id) {
         User user = userRepository.findById(id)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         String newEmail = userRequest.email();
         userValidation.validateEmailUserRequest(newEmail);
@@ -104,14 +106,14 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse updatePassword(UserPasswordUpdateRequest userRequest, long id) {
         User user = userRepository.findById(id)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
-        
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
         validateCurrentPasswordPassedByUser(user, userRequest.currentPassword());
         userValidation.validatePasswordUserRequest(userRequest.newPassword());
 
         String encodePassword = passwordEncoder.encode(userRequest.newPassword());
         userUpdater.updatePassword(user, encodePassword);
-        
+
         User savedUser = userRepository.save(user);
         return UserMapper.toResponse(savedUser);
     }
@@ -126,7 +128,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void delete(long id) {
         User user = userRepository.findById(id)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         userRepository.delete(user);
     }
@@ -135,7 +137,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserResponse searchByEmail(String email) {
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new UserNotFoundException("User not found with this email"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with this email"));
 
         return UserMapper.toResponse(user);
     }

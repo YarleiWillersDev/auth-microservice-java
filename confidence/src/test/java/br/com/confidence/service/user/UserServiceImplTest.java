@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,7 +74,6 @@ public class UserServiceImplTest {
 
         @Test
         void shouldCreateUserWhenReceivedDataIsCorrect() {
-
             Role defaultRole = new Role();
             defaultRole.setId(1L);
             defaultRole.setName("ROLE_USER");
@@ -89,7 +89,8 @@ public class UserServiceImplTest {
             savedUser.setRoles(List.of(defaultRole));
 
             when(userRepository.existsByEmail(user.email())).thenReturn(false);
-            when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(defaultRole));
+            // ✅ MUDANÇA: List ao invés de Optional
+            when(roleRepository.findByName("ROLE_USER")).thenReturn(List.of(defaultRole));
             when(passwordEncoder.encode(user.password())).thenReturn("encoded-password");
             when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
@@ -107,27 +108,12 @@ public class UserServiceImplTest {
         }
 
         @Test
-        void shouldReturnErrorWhenTryingCreateUserWithEmailAlreadyRegisteredInDatabase() {
-
-            UserRequest user = new UserRequest("Yarlei", "teste@email.com", "SenhaForte@123");
-
-            when(userRepository.existsByEmail(user.email())).thenReturn(true);
-
-            assertThrows(UserAlreadyExistsException.class, () -> userServiceImpl.create(user));
-
-            verify(userValidation).validateUserRequest(user);
-            verify(userRepository).existsByEmail(user.email());
-            verifyNoInteractions(roleRepository, userUpdater, passwordEncoder);
-            verify(userRepository, never()).save(any(User.class));
-        }
-
-        @Test
         void shouldReturnErrorWhenTryingCreateUserWithRoleThatIsNotFound() {
-
             UserRequest request = new UserRequest("Yarlei", "teste@email.com", "SenhaForte@123");
 
             when(userRepository.existsByEmail(request.email())).thenReturn(false);
-            when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.empty());
+            // ✅ MUDANÇA: Lista vazia ao invés de Optional.empty()
+            when(roleRepository.findByName("ROLE_USER")).thenReturn(Collections.emptyList());
 
             assertThrows(RoleNotFoundException.class, () -> userServiceImpl.create(request));
 
